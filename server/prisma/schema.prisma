@@ -1,0 +1,454 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  relationMode = "prisma"
+}
+
+enum UserRole {
+  youth
+  employer
+  admin
+  verifier
+}
+
+enum JobStatus {
+  unemployed
+  employed
+  self_employed
+}
+
+enum YouthStatus {
+  JOB_SEEKER
+  EMPLOYED
+  FREELANCER
+}
+
+enum JobType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  INTERNSHIP
+  FREELANCE
+  TEMPORARY
+}
+
+enum ExperienceLevel {
+  ENTRY
+  JUNIOR
+  MID_LEVEL
+  SENIOR
+  EXECUTIVE
+}
+
+enum SkillLevel {
+  beginner
+  intermediate
+  expert
+}
+
+enum ApplicationStatus {
+  applied
+  shortlisted
+  rejected
+}
+
+enum NotificationTarget {
+  ALL
+  YOUTHS
+  EMPLOYERS
+}
+
+enum NotificationStatus {
+  sent
+  scheduled
+  draft
+}
+
+model User {
+  id                      String    @id @default(uuid())
+  email                   String    @unique
+  passwordHash            String
+  role                    UserRole
+  phone                   String?
+  isEmailVerified         Boolean   @default(false)
+  emailVerificationToken  String?
+  emailVerificationExpiry DateTime?
+  resetToken              String?
+  resetTokenExpiry        DateTime?
+  createdAt               DateTime  @default(now())
+  lastLogin               DateTime?
+  isActive                Boolean   @default(true)
+
+  profile             YouthProfile?
+  employerProfile     EmployerProfile?
+  jobs                Job[]
+  auditLogs           AuditLog[]
+  passwordResetTokens PasswordResetToken[]
+  userFiles           UserFile[]
+  groupMemberships    GroupMember[]
+  aiPredictions       AIPrediction[]
+  settings            UserSettings?
+
+  @@index([emailVerificationToken])
+  @@index([resetToken])
+}
+
+model YouthProfile {
+  id               String                 @id @default(uuid())
+  userId           String                 @unique
+  user             User                   @relation(fields: [userId], references: [id])
+  firstName        String
+  lastName         String
+  dateOfBirth      DateTime?
+  gender           String?
+  address          String?
+  district         String? // Added district field
+  city             String?
+  state            String?
+  country          String?
+  postalCode       String?
+  bio              String?                @db.Text
+  jobStatus        JobStatus              @default(unemployed)
+  status           YouthStatus            @default(JOB_SEEKER) // Added status field
+  cvFileId         String? // Reference to MongoDB CV file
+  profilePicId     String? // Reference to MongoDB profile picture
+  skills           ProfileSkill[]         @relation("YouthSkills")
+  applications     Application[]
+  educations       Education[]
+  experiences      Experience[]
+  businesses       Business[]
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
+  verification     Verification?          @relation(fields: [verificationId], references: [id])
+  verificationId   String?                @unique
+  reminders        VerificationReminder[]
+  groupMemberships GroupMember[]
+}
+
+model EmployerProfile {
+  id                     String   @id @default(uuid())
+  userId                 String   @unique
+  user                   User     @relation(fields: [userId], references: [id])
+  companyName            String
+  contactName            String
+  contactTitle           String?
+  companySize            String?
+  industry               String?
+  website                String?
+  description            String?  @db.Text
+  logo                   String?
+  address                String?
+  district               String? // Added district field
+  city                   String?
+  state                  String?
+  country                String?
+  postalCode             String?
+  phone                  String?
+  taxId                  String? // Added tax ID
+  businessRegistrationId String? // Added business registration ID
+  isCurrentlyHiring      Boolean  @default(false) // Added hiring status
+  avgHirePerMonth        Int? // Added average hires per month
+  preferredSkills        String[] // Added preferred skills array
+  additionalNotes        String?  @db.Text // Added optional notes
+  isVerified             Boolean  @default(false)
+  jobs                   Job[]    @relation("EmployerJobs")
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+}
+
+model Education {
+  id           String       @id @default(uuid())
+  profileId    String
+  profile      YouthProfile @relation(fields: [profileId], references: [id])
+  school       String
+  degree       String?
+  fieldOfStudy String?
+  startDate    DateTime?
+  endDate      DateTime?
+  verified     Boolean      @default(false)
+}
+
+model Experience {
+  id           String       @id @default(uuid())
+  profileId    String
+  profile      YouthProfile @relation(fields: [profileId], references: [id])
+  employerName String
+  role         String
+  startDate    DateTime?
+  endDate      DateTime?
+  description  String?
+  isCurrent    Boolean      @default(false)
+}
+
+model Skill {
+  id            String          @id @default(uuid())
+  name          String          @unique
+  canonicalName String?
+  category      String?
+  profileSkills ProfileSkill[]
+  skillDemands  SkillDemand[]
+  trainings     TrainingSkill[]
+}
+
+model ProfileSkill {
+  id              String       @id @default(uuid())
+  profileId       String
+  profile         YouthProfile @relation("YouthSkills", fields: [profileId], references: [id])
+  skillId         String
+  skill           Skill        @relation(fields: [skillId], references: [id])
+  level           SkillLevel
+  yearsExperience Int?         @default(0)
+
+  @@unique([profileId, skillId])
+  @@index([skillId])
+}
+
+model Business {
+  id                 String       @id @default(uuid())
+  profileId          String
+  profile            YouthProfile @relation(fields: [profileId], references: [id])
+  businessName       String
+  businessType       String?
+  revenueEstimate    Float?
+  registrationStatus String?
+  needsSupport       String?
+  createdAt          DateTime     @default(now())
+}
+
+model Verification {
+  id           String                 @id @default(uuid())
+  status       String // e.g., 'pending', 'verified', 'rejected'
+  documentType String? // e.g., 'id_card', 'passport', 'certificate'
+  documentUrl  String? // URL to the uploaded document
+  verifiedAt   DateTime?
+  verifiedBy   String? // Admin ID who verified
+  notes        String? // Any notes from the verifier
+  youthProfile YouthProfile[]
+  reminders    VerificationReminder[]
+  createdAt    DateTime               @default(now())
+  updatedAt    DateTime               @updatedAt
+}
+
+model VerificationReminder {
+  id             String       @id @default(uuid())
+  profileId      String
+  profile        YouthProfile @relation(fields: [profileId], references: [id])
+  verification   Verification @relation(fields: [verificationId], references: [id])
+  verificationId String
+  reminderSentAt DateTime?    @default(now())
+  message        String?
+
+  @@unique([profileId, verificationId])
+}
+
+model Job {
+  id                String          @id @default(uuid())
+  employerId        String
+  employer          User            @relation(fields: [employerId], references: [id])
+  employerProfile   EmployerProfile @relation("EmployerJobs", fields: [employerProfileId], references: [id])
+  employerProfileId String
+  title             String
+  description       String?
+  department        String? // Added department field
+  jobType           JobType         @default(FULL_TIME) // Added job type
+  experienceLevel   ExperienceLevel @default(ENTRY) // Added experience level
+  jobRequirements   String?         @db.Text // Added job requirements
+  numberOfPositions Int             @default(1) // Added number of positions
+  views             Int             @default(0) // Added views counter
+  benefits          String[] // Added benefits array
+  perks             String[] // Added perks array
+  requiredSkills    Json?
+  location          String?
+  district          String? // Added district field
+  isRemote          Boolean         @default(false)
+  salaryRange       String?
+  postedAt          DateTime        @default(now())
+  expiresAt         DateTime?
+  status            String?
+  applications      Application[]
+
+  @@index([postedAt])
+}
+
+model Application {
+  id        String            @id @default(uuid())
+  jobId     String
+  job       Job               @relation(fields: [jobId], references: [id])
+  profileId String
+  profile   YouthProfile      @relation(fields: [profileId], references: [id])
+  status    ApplicationStatus
+  score     Float?
+  appliedAt DateTime          @default(now())
+
+  @@unique([jobId, profileId])
+}
+
+model Training {
+  id                  String          @id @default(uuid())
+  logo                String? // Training company logo
+  trainingTitle       String
+  trainingCompany     String
+  ratings             Float?          @default(0)
+  startDate           DateTime
+  duration            String // e.g., "2 weeks", "3 months"
+  skills              TrainingSkill[]
+  description         String?         @db.Text
+  price               Float?
+  isActive            Boolean         @default(true)
+  maxParticipants     Int?
+  currentParticipants Int             @default(0)
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+}
+
+model TrainingSkill {
+  id         String   @id @default(uuid())
+  trainingId String
+  training   Training @relation(fields: [trainingId], references: [id])
+  skillId    String
+  skill      Skill    @relation(fields: [skillId], references: [id])
+
+  @@unique([trainingId, skillId])
+}
+
+model Group {
+  id          String        @id @default(uuid())
+  groupName   String
+  department  String? // Dept field
+  description String?       @db.Text
+  members     GroupMember[]
+  isActive    Boolean       @default(true)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model GroupMember {
+  id             String        @id @default(uuid())
+  groupId        String
+  group          Group         @relation(fields: [groupId], references: [id])
+  userId         String
+  user           User          @relation(fields: [userId], references: [id])
+  role           String        @default("member") // e.g., "admin", "member", "moderator"
+  joinedAt       DateTime      @default(now())
+  YouthProfile   YouthProfile? @relation(fields: [youthProfileId], references: [id])
+  youthProfileId String?
+
+  @@unique([groupId, userId])
+}
+
+model UserSettings {
+  id                 String   @id @default(uuid())
+  userId             String   @unique
+  user               User     @relation(fields: [userId], references: [id])
+  emailNotifications Boolean  @default(true)
+  pushNotifications  Boolean  @default(true)
+  smsNotifications   Boolean  @default(false)
+  privacyLevel       String   @default("public") // public, private, friends
+  language           String   @default("en")
+  timezone           String?
+  theme              String   @default("light") // light, dark, auto
+  jobAlerts          Boolean  @default(true)
+  trainingAlerts     Boolean  @default(true)
+  groupAlerts        Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+model AIPrediction {
+  id             String    @id @default(uuid())
+  userId         String
+  user           User      @relation(fields: [userId], references: [id])
+  predictionType String // e.g., "job_match", "skill_gap", "career_path"
+  data           Json // Prediction data
+  confidence     Float?
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  expiresAt      DateTime?
+}
+
+model UserFile {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+  fileType     String // "cv", "profile_pic", "document"
+  originalName String
+  storedName   String
+  mimeType     String
+  size         Int
+  url          String
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([userId, fileType])
+}
+
+model SkillDemand {
+  id          String   @id @default(uuid())
+  skillId     String
+  skill       Skill    @relation(fields: [skillId], references: [id])
+  periodStart DateTime
+  periodEnd   DateTime
+  demandCount Int
+
+  @@index([skillId, periodStart, periodEnd])
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  actorId    String?
+  actor      User?    @relation(fields: [actorId], references: [id])
+  action     String
+  entityType String
+  entityId   String?
+  metaJson   Json?
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+model PasswordResetToken {
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id])
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model Notification {
+  id          String             @id @default(uuid())
+  title       String
+  message     String
+  target      NotificationTarget
+  status      NotificationStatus @default(draft)
+  scheduledAt DateTime?
+  sentAt      DateTime?
+  recipients  UserNotification[]
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  @@index([scheduledAt])
+  @@index([status])
+}
+
+model UserNotification {
+  id             String       @id @default(uuid())
+  userId         String
+  notificationId String
+  notification   Notification @relation(fields: [notificationId], references: [id])
+  isRead         Boolean      @default(false)
+  readAt         DateTime?
+  createdAt      DateTime     @default(now())
+
+  @@unique([userId, notificationId])
+  @@index([userId, isRead])
+}

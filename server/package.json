@@ -1,0 +1,42 @@
+{
+  "name": "dysem-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "commonjs",
+  "main": "server.js",
+  "scripts": {
+    "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node server.js",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "create-admin": "node ../scripts/createAdmin.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.13.0",
+    "@types/nodemailer": "^6.4.17",
+    "bcryptjs": "^2.4.3",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.5.1",
+    "multer": "^1.4.5-lts.1",
+    "nodemailer": "^7.0.5",
+    "openai": "^5.12.2",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/cookie-parser": "^1.4.9",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^4.17.23",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/multer": "^1.4.13",
+    "@types/node": "^20.14.9",
+    "prisma": "^6.13.0",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.4.5"
+  }
+}
