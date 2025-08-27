@@ -10,9 +10,18 @@ async function start() {
     await prisma.$connect();
     await connectMongo();
 
-    // Health check route
+    // Health check routes
     app.get('/', (req, res) => {
       res.send('DYPSE API IS RUNNING');
+    });
+
+    // Health check endpoint for Render
+    app.get('/api/health', (req, res) => {
+      res.status(200).json({
+        status: 'ok',
+        timestamp: new Date().toISOString(),
+        service: 'DYPSE-backend'
+      });
     });
 
     // Test API route

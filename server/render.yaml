@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: dysem-backend
+    env: node
+    root: .  # Current directory (server)
+    buildCommand: |
+      npm install
+      npm run build
+      npm run prisma:generate
+      npx prisma migrate deploy
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NPM_CONFIG_PRODUCTION
+        value: 'false'
+      - key: DATABASE_URL
+        sync: false  # This tells Render to not sync this value across environments
+        # Set this in your Render dashboard under Environment Variables
+    plan: free
+    autoDeploy: true
+    healthCheckPath: /api/health
+    numInstances: 1
+    deployment:
+      restartPolicyType: ALWAYS
+      restartPolicyMaxRetries: 5
+      restartPolicyTimeout: 5m
