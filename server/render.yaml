@@ -19,7 +19,6 @@ services:
         # Set this in your Render dashboard under Environment Variables
     plan: free
     autoDeploy: true
-    healthCheckPath: /api/health
     numInstances: 1
     deployment:
       restartPolicyType: ALWAYS
