@@ -1,24 +1,14 @@
-import { Router, Request, Response } from "express";
+import express, { Request, Response } from "express";
+const router = express.Router();
 import { env } from "../config/env";
 import { prisma } from "../config/db";
 import type { Prisma } from '@prisma/client';
 import { comparePassword, hashPassword } from "../utils/password";
 import { JwtPayload } from 'jsonwebtoken';
-
-// Extend the Express Request type to include the user property
-declare global {
-  namespace Express {
-    interface Request {
-      user?: JwtPayload & { sub: string };
-    }
-  }
-}
 import jwt from "jsonwebtoken";
 import { z } from "zod";
 import { sendVerificationEmail, sendPasswordResetEmail } from "../utils/email";
 import crypto from 'crypto';
-
-const router = Router();
 
 // Validation schemas
 const loginSchema = z.object({
@@ -209,14 +199,18 @@ router.post('/login', async (req, res) => {
     });
 
     // For youth users, get their profile data
-    let profile = null;
+    let profile: { firstName: string; lastName: string } | null = null;
     
     if (user.role === 'youth') {
       console.log('Fetching youth profile for user:', user.id);
-      profile = await prisma.youthProfile.findUnique({
+      const youthProfile = await prisma.youthProfile.findUnique({
         where: { userId: user.id },
         select: { firstName: true, lastName: true }
       });
+      profile = youthProfile ? {
+        firstName: youthProfile.firstName || '',
+        lastName: youthProfile.lastName || ''
+      } : null;
     }
 
     console.log('Generating JWT token...');

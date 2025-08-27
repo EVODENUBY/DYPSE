@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import express,{ Request, Response } from 'express';
 import { notificationService } from '../services/notification.service';
 import { z } from 'zod';
 import { requireAuth } from '../middlewares/auth';

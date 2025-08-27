@@ -1,4 +1,5 @@
-import { Request, Response, NextFunction } from 'express';
+import express, { Request, Response, NextFunction } from 'express';
+const router = express.Router();
 import jwt from 'jsonwebtoken';
 import { env } from '../config/env';
 

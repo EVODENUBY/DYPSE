@@ -1,8 +1,7 @@
-import { Router } from 'express';
+import express from 'express';
+const router = express.Router();
 import { notificationController } from '../controllers/notification.controller';
 import { requireRole } from '../middlewares/auth';
-
-const router = Router();
 
 // Admin-only routes
 router.post('/', requireRole(['admin']), notificationController.createNotification);

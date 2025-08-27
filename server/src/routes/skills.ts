@@ -1,14 +1,24 @@
-import { Router } from 'express';
+import express from 'express';
+const router = express.Router();
 import { prisma } from '../config/db';
 import { requireAuth, requireRole } from '../middlewares/auth';
 import { z } from 'zod';
 
-const router = Router();
-
 router.get('/', requireAuth, async (req, res) => {
-  const { q } = req.query as any;
-  const where = q ? { OR: [ { name: { contains: String(q), mode: 'insensitive' } }, { canonicalName: { contains: String(q), mode: 'insensitive' } } ] } : {};
-  const items = await prisma.skill.findMany({ where, orderBy: { name: 'asc' }, take: 100 });
+  const { q } = req.query as { q?: string };
+  const where = q ? {
+    OR: [
+      { name: { contains: q, mode: 'insensitive' as const } },
+      { canonicalName: { contains: q, mode: 'insensitive' as const } }
+    ]
+  } : {};
+  
+  const items = await prisma.skill.findMany({ 
+    where, 
+    orderBy: { name: 'asc' }, 
+    take: 100 
+  });
+  
   res.json(items);
 });
 

@@ -1,10 +1,9 @@
-import { Router } from 'express';
+import express from 'express';
+const router = express.Router();
 import { prisma } from '../config/db';
 import { requireAuth, requireRole } from '../middlewares/auth';
 import { z } from 'zod';
 import { hashPassword } from '../utils/password';
-
-const router = Router();
 
 router.get('/profiles', requireAuth, requireRole(['admin']), async (req, res) => {
   const { verified, page = '1', limit = '20' } = req.query as any;

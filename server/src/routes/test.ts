@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import express, { Router } from 'express';
 import { requireAuth } from '../middlewares/auth';
 
 const router = Router();

@@ -1,8 +1,7 @@
-import { Router } from 'express';
+import express from 'express';
+const router = express.Router();
 import { prisma } from '../config/db';
 import { requireAuth } from '../middlewares/auth';
-
-const router = Router();
 
 router.get('/profiles', requireAuth, async (req, res) => {
   const { q, skills, location, page = '1', limit = '20' } = req.query as any;

@@ -1,9 +1,8 @@
-import { Router } from 'express';
+import express from 'express';
+import { Request, Response } from 'express';
+const router = express.Router();
 import { requireAuth as auth } from '../middlewares/auth';
 import OpenAI from 'openai';
-import { Request, Response } from 'express';
-
-const router = Router();
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,

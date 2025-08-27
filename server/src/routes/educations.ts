@@ -1,10 +1,9 @@
-import { Router } from 'express';
+import express from 'express';
+const router = express.Router();
 import { prisma } from '../config/db';
 import { requireAuth, requireRole } from '../middlewares/auth';
 import { z } from 'zod';
 import { writeAuditLog } from '../utils/audit';
-
-const router = Router();
 
 const schema = z.object({
   school: z.string(),

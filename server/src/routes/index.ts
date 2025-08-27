@@ -1,4 +1,5 @@
-import { Router } from 'express';
+import express from 'express';
+const router = express.Router();
 import authRouter from './auth';
 import profilesRouter from './profiles';
 import jobsRouter from './jobs';
@@ -14,8 +15,6 @@ import businessesRouter from './businesses';
 import testRouter from './test';
 import chatRouter from './chat';
 import notificationsRouter from './notifications';
-
-const router = Router();
 
 // Test routes
 router.use('/test', testRouter);

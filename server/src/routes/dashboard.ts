@@ -1,8 +1,7 @@
-import { Router } from 'express';
+import express from 'express';
+const router = express.Router();
 import { prisma } from '../config/db';
 import { requireAuth, requireRole } from '../middlewares/auth';
-
-const router = Router();
 
 router.get('/kpis', requireAuth, requireRole(['admin']), async (_req, res) => {
   const [totalYouth, employed, businessesThisMonth, topSkills] = await Promise.all([

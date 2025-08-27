@@ -18,15 +18,22 @@ class NotificationService {
   constructor(private prisma: PrismaClient) {}
 
   async createNotification(data: CreateNotificationInput): Promise<PrismaNotification> {
+    const notificationData: any = {
+      title: data.title,
+      message: data.message,
+      target: data.target,
+      status: 'sent',
+      createdById: data.createdById,
+    };
+
+    // Only add scheduledFor if it's provided
+    if (data.scheduledFor) {
+      notificationData.scheduledAt = data.scheduledFor;
+      notificationData.status = 'scheduled';
+    }
+
     const notification = await this.prisma.notification.create({
-      data: {
-        title: data.title,
-        message: data.message,
-        target: data.target,
-        scheduledFor: data.scheduledFor || new Date(),
-        status: data.scheduledFor ? 'scheduled' : 'sent',
-        createdById: data.createdById,
-      },
+      data: notificationData,
     });
 
     // If notification is to be sent immediately, create user notifications
@@ -54,7 +61,7 @@ class NotificationService {
       data: users.map(user => ({
         userId: user.id,
         notificationId,
-        read: false,
+        isRead: false,
       })),
       skipDuplicates: true,
     });
@@ -90,7 +97,7 @@ class NotificationService {
 
     const notifications = userNotifications.map(un => ({
       ...un.notification,
-      read: un.read,
+      read: un.isRead,
       readAt: un.readAt,
     }));
 
@@ -104,7 +111,7 @@ class NotificationService {
         notificationId,
       },
       data: {
-        read: true,
+        isRead: true,
         readAt: new Date(),
       },
     });
@@ -114,10 +121,10 @@ class NotificationService {
     await this.prisma.userNotification.updateMany({
       where: {
         userId,
-        read: false,
+        isRead: false,
       },
       data: {
-        read: true,
+        isRead: true,
         readAt: new Date(),
       },
     });
@@ -127,7 +134,7 @@ class NotificationService {
     return this.prisma.userNotification.count({
       where: {
         userId,
-        read: false,
+        isRead: false,
       },
     });
   }

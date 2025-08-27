@@ -12,7 +12,7 @@ async function start() {
 
     // Health check route
     app.get('/', (req, res) => {
-      res.send('DYPSM API IS RUNNING');
+      res.send('DYPSE API IS RUNNING');
     });
 
     // Test API route

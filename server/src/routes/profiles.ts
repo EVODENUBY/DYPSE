@@ -1,10 +1,9 @@
-import { Router } from 'express';
+import express from 'express';
+const router = express.Router();
 import { prisma } from '../config/db';
 import { requireAuth, requireRole } from '../middlewares/auth';
 import { z } from 'zod';
 import { CvDocument } from '../models/cvDocument.model';
-
-const router = Router();
 
 router.get('/me', requireAuth, requireRole(['youth']), async (req, res) => {
   const me = await prisma.youthProfile.findUnique({

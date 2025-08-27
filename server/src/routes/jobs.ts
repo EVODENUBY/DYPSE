@@ -1,9 +1,8 @@
-import { Router } from 'express';
+import express from 'express';
+const router = express.Router();
 import { prisma } from '../config/db';
 import { requireAuth, requireRole } from '../middlewares/auth';
 import { z } from 'zod';
-
-const router = Router();
 
 const createJobSchema = z.object({
   title: z.string().min(2),
