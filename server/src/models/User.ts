@@ -2,8 +2,8 @@ import mongoose, { Document, Model, Schema, model, Types } from 'mongoose';
 import bcrypt from 'bcryptjs';
 import jwt, { SignOptions } from 'jsonwebtoken';
 
-// Define UserRole enum separately to avoid export conflicts
-enum UserRoleEnum {
+// Define UserRole enum for use throughout the application
+export enum UserRole {
   YOUTH = 'youth',
   EMPLOYER = 'employer',
   ADMIN = 'admin',
@@ -16,7 +16,7 @@ interface IUser extends Document {
   id: string;
   email: string;
   passwordHash: string;
-  role: UserRoleEnum; // This is correct - using the enum directly
+  role: UserRole;
   phone?: string;
   isEmailVerified: boolean;
   emailVerificationToken?: string;
@@ -24,6 +24,7 @@ interface IUser extends Document {
   resetToken?: string;
   resetTokenExpiry?: Date;
   createdAt: Date;
+  updatedAt: Date;
   lastLogin?: Date;
   isActive: boolean;
   firstName?: string;
@@ -42,11 +43,10 @@ export interface IUserModel extends Model<IUser> {
 
 // Type declarations for Express
 declare global {
-  // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Express {
     interface User {
       id: string;
-      role: UserRoleEnum;
+      role: UserRole;
     }
     
     interface Request {
@@ -72,8 +72,8 @@ const userSchema = new Schema<IUser, IUserModel>(
     },
     role: {
       type: String,
-      enum: Object.values(UserRoleEnum),
-      default: UserRoleEnum.YOUTH,
+      enum: Object.values(UserRole),
+      default: UserRole.YOUTH,
     },
     phone: {
       type: String,
@@ -183,13 +183,16 @@ userSchema.methods.generateAuthToken = function (): string {
     role: this.role 
   };
   
-  const expiresIn = process.env.JWT_EXPIRES_IN || '30d';
+  if (!process.env.JWT_SECRET) {
+    throw new Error('JWT_SECRET is not defined in environment variables');
+  }
   
-  return jwt.sign(
-    payload,
-    process.env.JWT_SECRET,
-    { expiresIn }
-  );
+  // Convert days to seconds for JWT expiration
+  const expiresIn = 30 * 24 * 60 * 60; // 30 days in seconds
+  const secret: jwt.Secret = process.env.JWT_SECRET;
+  const options: jwt.SignOptions = { expiresIn };
+  
+  return jwt.sign(payload, secret, options);
 };
 
 // Add static method to find user by email with password hash
@@ -200,14 +203,18 @@ userSchema.statics.findByEmailWithPassword = async function(email: string) {
 // Create and export the model - check if already exists to avoid overwrite error
 const User = mongoose.models.User || mongoose.model<IUser, IUserModel>('User', userSchema);
 
-// Export types and enums
-export { User, type IUser, UserRoleEnum as UserRole };
+export { User, type IUser };
 
+// Extend Express Request type with user property
 declare global {
   namespace Express {
     interface User {
       id: string;
-      role: UserRoleEnum;
+      role: UserRole;
+    }
+    
+    interface Request {
+      user?: User;
     }
   }
 }

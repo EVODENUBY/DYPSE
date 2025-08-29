@@ -401,8 +401,8 @@ export const handleValidationErrors = (req: Request, res: Response, next: NextFu
   const errors = validationResult(req);
   
   if (!errors.isEmpty()) {
-    const formattedErrors = errors.array().map(error => ({
-      field: error.param,
+    const formattedErrors = errors.array().map((error: any) => ({
+      field: error.path || error.param || 'unknown',
       message: error.msg,
       value: error.value
     }));

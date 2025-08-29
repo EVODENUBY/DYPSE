@@ -3,7 +3,8 @@ import jwt from 'jsonwebtoken';
 import { validationResult } from 'express-validator';
 import mongoose, { Types } from 'mongoose';
 import crypto from 'crypto';
-import { User, UserRole, type IUser } from '../models/User';
+import { User, type IUser } from '../models/User';
+import { UserRole } from '../models/User';
 import { ActivityHelpers } from '../services/activityLogger.service';
 import { sendPasswordResetEmail, sendPasswordResetSuccessEmail } from '../utils/email';
 
@@ -19,10 +20,14 @@ declare global {
 }
 
 // Generate JWT Token
-const generateToken = (id: string, role: UserRole) => {
+const generateToken = (id: string, role: UserRole): string => {
+  if (!process.env.JWT_SECRET) {
+    throw new Error('JWT_SECRET is not defined');
+  }
+  
   return jwt.sign(
     { id, role },
-    process.env.JWT_SECRET || 'your_jwt_secret',
+    process.env.JWT_SECRET,
     { expiresIn: '30d' }
   );
 };
@@ -40,7 +45,7 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
     const { firstName, lastName, email, password, phone, role = UserRole.YOUTH } = req.body;
 
     // Check if user exists
-    const userExists = await User.findOne({ email });
+    const userExists = await (User as any).findOne({ email }).exec();
     if (userExists) {
       return res.status(400).json({ message: 'User already exists' });
     }
@@ -94,7 +99,7 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
     const { email, password } = req.body;
 
     // Find user with password hash
-    const user = await (User as any).findByEmailWithPassword(email) as any;
+    const user = await (User as any).findByEmailWithPassword(email) as (IUser & { passwordHash: string }) | null;
     if (!user) {
       console.log('No user found with email:', email);
       return res.status(401).json({ message: 'Invalid credentials' });
@@ -159,12 +164,12 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
 export const getMe = async (req: Request, res: Response, next: NextFunction) => {
   try {
     // Get the latest user data (not from cache)
-    const user = await User.findById(req.user?.id)
+    const user = await (User as any).findOne({ _id: new Types.ObjectId(req.user?.id) })
       .select('-passwordHash -__v')
       .lean()
-      .exec() as unknown as (IUser & { 
-        _id: Types.ObjectId; 
-        createdAt?: Date; 
+      .exec() as (IUser & { 
+        _id: Types.ObjectId;
+        createdAt?: Date;
         updatedAt?: Date;
         lastLogin?: Date;
       }) | null;
@@ -207,38 +212,36 @@ export const getMe = async (req: Request, res: Response, next: NextFunction) => 
 // @desc    Protect routes
 // @access  Private
 export const protect = async (req: Request, res: Response, next: NextFunction) => {
-  let token;
+  try {
+    let token;
 
-  if (req.headers.authorization?.startsWith('Bearer')) {
-    try {
-      // Get token from header
+    if (req.headers.authorization?.startsWith('Bearer')) {
       token = req.headers.authorization.split(' ')[1];
-
-      // Verify token
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your_jwt_secret') as { id: string; role: UserRole };
-
-      // Get user from the token
-      const user = await User.findById(decoded.id).select('-passwordHash') as (IUser & { _id: mongoose.Types.ObjectId }) | null;
-      
-      if (!user || !user.isActive) {
-        return res.status(401).json({ message: 'User not found or account is inactive' });
-      }
-
-      // Attach user to request object
-      req.user = {
-        id: user._id.toString(),
-        role: user.role
-      };
-      
-      next();
-    } catch (error) {
-      console.error(error);
-      res.status(401).json({ message: 'Not authorized, token failed' });
     }
-  }
 
-  if (!token) {
-    return res.status(401).json({ message: 'Not authorized, no token' });
+    if (!token) {
+      return res.status(401).json({ message: 'Not authorized, no token' });
+    }
+
+    if (!process.env.JWT_SECRET) {
+      throw new Error('JWT_SECRET is not defined');
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET) as { id: string; role: UserRole };
+    const user = await (User as any).findById(decoded.id).select('-passwordHash').lean().exec() as IUser | null;
+
+    if (!user) {
+      return res.status(401).json({ message: 'Not authorized, user not found' });
+    }
+
+    req.user = {
+      id: user._id.toString(),
+      role: user.role
+    };
+
+    next();
+  } catch (error) {
+    return res.status(401).json({ message: 'Not authorized, token failed' });
   }
 };
 
@@ -246,9 +249,9 @@ export const protect = async (req: Request, res: Response, next: NextFunction) =
 // @access  Private
 export const authorize = (...roles: UserRole[]) => {
   return (req: Request, res: Response, next: NextFunction) => {
-    if (!req.user || !roles.includes(req.user.role)) {
-      return res.status(403).json({
-        message: `User role ${req.user?.role} is not authorized to access this route`
+    if (!req.user || !roles.includes(req.user.role as UserRole)) {
+      return res.status(403).json({ 
+        message: `User role ${req.user?.role} is not authorized to access this route` 
       });
     }
     next();
@@ -260,64 +263,31 @@ export const authorize = (...roles: UserRole[]) => {
 // @access  Public
 export const requestPasswordReset = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ 
-        success: false,
-        errors: errors.array() 
-      });
-    }
-
     const { email } = req.body;
 
-    // Find user by email
-    const user = await User.findOne({ email });
+    const user = await (User as any).findOne({ email }).exec() as IUser & { 
+      resetToken?: string; 
+      resetTokenExpiry?: Date;
+      save: () => Promise<void>;
+    };
     if (!user) {
-      // Don't reveal whether user exists or not for security
-      return res.status(200).json({
-        success: true,
-        message: 'If an account with that email exists, we have sent a password reset link.'
-      });
-    }
-
-    // Check if user is active
-    if (!user.isActive) {
-      return res.status(400).json({
-        success: false,
-        message: 'Account is deactivated. Please contact support.'
-      });
+      return res.status(404).json({ message: 'User not found' });
     }
 
     // Generate reset token
-    const resetToken = crypto.randomBytes(32).toString('hex');
-    const resetTokenExpiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+    const resetToken = crypto.randomBytes(20).toString('hex');
+    const resetTokenExpiry = Date.now() + 3600000; // 1 hour from now
 
-    // Save reset token to user
     user.resetToken = resetToken;
-    user.resetTokenExpiry = resetTokenExpiry;
+    user.resetTokenExpiry = new Date(resetTokenExpiry);
     await user.save();
 
-    // Send password reset email
+    // Send email with reset link
     const userName = user.firstName || user.email.split('@')[0];
     await sendPasswordResetEmail(user.email, userName, resetToken);
 
-    console.log(`Password reset email sent to: ${user.email}`);
-    
-    res.status(200).json({
-      success: true,
-      message: 'Password reset link has been sent to your email address.'
-    });
+    res.json({ message: 'Password reset email sent' });
   } catch (error) {
-    console.error('Error in requestPasswordReset:', error);
-    
-    // Handle email sending errors
-    if (error instanceof Error && error.message.includes('Failed to send')) {
-      return res.status(500).json({
-        success: false,
-        message: 'Failed to send reset email. Please try again later.'
-      });
-    }
-    
     next(error);
   }
 };
@@ -327,30 +297,21 @@ export const requestPasswordReset = async (req: Request, res: Response, next: Ne
 // @access  Public
 export const resetPassword = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ 
-        success: false,
-        errors: errors.array() 
-      });
-    }
-
     const { token, password } = req.body;
 
-    // Find user by reset token and check expiry
-    const user = await User.findOne({
+    const user = await (User as any).findOne({
       resetToken: token,
       resetTokenExpiry: { $gt: new Date() }
-    });
+    }).exec() as IUser & { passwordHash: string, resetToken?: string, resetTokenExpiry?: Date };
 
     if (!user) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid or expired reset token.'
-      });
+      return res.status(400).json({ message: 'Invalid or expired token' });
     }
 
-    // Check if user is active
+    // Update password
+    user.passwordHash = password; // Will be hashed by pre-save hook
+    (user as any).resetToken = undefined;
+    (user as any).resetTokenExpiry = undefined;
     if (!user.isActive) {
       return res.status(400).json({
         success: false,

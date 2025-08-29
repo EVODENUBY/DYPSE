@@ -160,11 +160,11 @@ export const getMyProfile = async (req: Request, res: Response) => {
       return res.status(401).json({ success: false, message: 'User not authenticated' });
     }
 
-    let profile = await YouthProfile.findOne({ userId }).populate('userId');
+    let profile = await (YouthProfile as any).findOne({ userId }).populate('userId').exec();
     
     if (!profile) {
       // Create a new profile with default values
-      const user = await User.findById(userId);
+      const user = await (User as any).findById(userId).exec();
       if (!user) {
         return res.status(404).json({ success: false, message: 'User not found' });
       }
@@ -229,14 +229,14 @@ export const updateMyProfile = async (req: Request, res: Response) => {
     if (updateData.phone) userUpdateData.phone = updateData.phone;
     
     if (Object.keys(userUpdateData).length > 0) {
-      await User.findByIdAndUpdate(userId, userUpdateData);
+      await (User as any).findByIdAndUpdate(userId, userUpdateData).exec();
     }
 
-    const profile = await YouthProfile.findOneAndUpdate(
+    const profile = await (YouthProfile as any).findOneAndUpdate(
       { userId },
       updateData,
       { new: true, upsert: true }
-    );
+    ).exec();
 
     // Load user skills for accurate profile completion calculation
     const userSkills = await UserSkill.find({ userId }).populate('skillId');

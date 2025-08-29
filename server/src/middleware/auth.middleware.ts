@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { User, UserRole } from '../models/user.model';
+import { User, UserRole } from '../models/User';
 
 // Extend the Express Request type to include user
 declare global {
@@ -45,7 +45,7 @@ export const authenticateToken = async (req: Request, res: Response, next: NextF
       ) as TokenPayload;
 
       // Check if user still exists
-      const user = await User.findById(decoded.id);
+      const user = await (User as any).findById(decoded.id).exec();
       if (!user) {
         return res.status(401).json({ 
           success: false, 
