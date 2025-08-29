@@ -3,12 +3,12 @@ import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
 import morgan from 'morgan';
-import authRoutes from './routes/authRoutes.js';
-import profileRoutes from './routes/profileRoutes.js';
-import activityRoutes from './routes/activity.routes.js';
-import staticRoutes from './routes/staticRoutes.js';
-import adminRoutes from './routes/admin.routes.js';
-import { connectDB } from './utils/db.js';
+import authRoutes from './routes/authRoutes';
+import profileRoutes from './routes/profileRoutes';
+import activityRoutes from './routes/activity.routes';
+import staticRoutes from './routes/staticRoutes';
+import adminRoutes from './routes/admin.routes';
+import { connectDB } from './utils/db';
 
 // Load environment variables
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 5000;

@@ -181,7 +181,6 @@ const youthProfileSchema = new Schema<IYouthProfile>(
 );
 
 // Indexes
-youthProfileSchema.index({ userId: 1 }, { unique: true });
 youthProfileSchema.index({ city: 1 });
 youthProfileSchema.index({ country: 1 });
 youthProfileSchema.index({ 'skills.name': 1 });

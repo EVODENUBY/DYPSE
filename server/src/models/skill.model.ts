@@ -69,9 +69,7 @@ const userSkillSchema = new Schema<IUserSkill>(
 );
 
 // Indexes
-skillSchema.index({ name: 1 }, { unique: true });
 skillSchema.index({ category: 1 });
-
 userSkillSchema.index({ userId: 1, skillId: 1 }, { unique: true });
 userSkillSchema.index({ userId: 1 });
 userSkillSchema.index({ skillId: 1 });
