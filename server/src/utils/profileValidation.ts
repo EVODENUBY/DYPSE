@@ -1,7 +1,7 @@
 import { body, validationResult } from 'express-validator';
 import { Request, Response, NextFunction } from 'express';
 import xss from 'xss';
-import validator from 'validator';
+import * as validator from 'validator';
 
 // XSS Configuration for content sanitization
 const xssOptions = {
