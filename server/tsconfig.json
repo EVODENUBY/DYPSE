@@ -13,9 +13,9 @@
     "sourceMap": true,
     "baseUrl": ".",
     "typeRoots": [
-      "./node_modules/@types",
-      "./src/types"
-    ]
+      "./node_modules/@types"
+    ],
+    "types": ["node", "validator"]
   },
   "include": ["src/**/*.ts", "src/types/**/*.d.ts"],
   "exclude": ["node_modules", "dist"]
