@@ -2,18 +2,18 @@
   "name": "server",
   "version": "1.0.0",
   "description": "",
-  "main": "dist/index.js",
+  "main": "dist/src/index.js",
   "type": "module",
   "scripts": {
     "build": "tsc",
-    "start": "node --experimental-specifier-resolution=node dist/index.js",
-    "dev": "tsx watch index.ts",
+    "start": "node --experimental-specifier-resolution=node dist/src/index.js",
+    "dev": "tsx watch src/index.ts",
     "create:admin": "tsx src/scripts/createAdmin.ts"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "exports": "./dist/index.js",
+  "exports": "./dist/src/index.js",
   "dependencies": {
     "@prisma/client": "^5.0.0",
     "@types/bcryptjs": "^2.4.6",
