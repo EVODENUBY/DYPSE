@@ -1,6 +1,6 @@
 import React from 'react';
 import { FiClock, FiActivity } from 'react-icons/fi';
-import { FormattedActivity } from '@/lib/activityUtils';
+import type { FormattedActivity } from '@/lib/activityUtils';
 
 interface ActivityFeedProps {
   activities: FormattedActivity[];
@@ -34,7 +34,7 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({
       
       <div className="space-y-4">
         {displayActivities.length > 0 ? (
-          displayActivities.map((activity, index) => (
+          displayActivities.map((activity) => (
             <div 
               key={activity.id} 
               className={`flex items-start pb-4 border-b border-gray-100 last:border-0 last:pb-0 ${itemClassName}`}

@@ -4,9 +4,9 @@ import {
   StarIcon, 
   BriefcaseIcon, 
   UserIcon, 
-  TrendingUpIcon,
   LightBulbIcon,
-  ClockIcon
+  ClockIcon,
+  ArrowTrendingUpIcon
 } from '@heroicons/react/24/outline';
 import { profileAPI } from '@/lib/profileApi';
 import { LoadingSpinner } from './ui/LoadingSpinner';
@@ -126,7 +126,7 @@ const ProfileInsights: React.FC<ProfileInsightsProps> = ({ className }) => {
             </div>
             <div className="text-center">
               <div className="bg-purple-50 rounded-lg p-4">
-                <TrendingUpIcon className="h-8 w-8 text-purple-600 mx-auto mb-2" />
+                <ArrowTrendingUpIcon className="h-8 w-8 text-purple-600 mx-auto mb-2" />
                 <p className="text-2xl font-bold text-purple-600">{insights.profileStrength.experience}%</p>
                 <p className="text-sm text-gray-600">Experience</p>
               </div>

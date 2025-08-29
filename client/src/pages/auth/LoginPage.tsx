@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { FaEnvelope, FaLock, FaEye, FaEyeSlash } from 'react-icons/fa';
 import { Card, CardHeader, CardDescription, CardContent } from '@/components/ui/Card';
 import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton';
@@ -12,7 +12,6 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { NetworkError, ApiError } from '@/lib/api';
 
 export function LoginPage() {
-  const navigate = useNavigate();
   // Get email from URL params if coming from signup
   const searchParams = new URLSearchParams(window.location.search);
   const emailFromSignup = searchParams.get('email') || '';

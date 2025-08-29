@@ -13,7 +13,6 @@ import LocationModal from '../../components/modals/LocationModal';
 import SkillsModal from '../../components/modals/SkillsModal';
 import ExperienceModal from '../../components/modals/ExperienceModal';
 import EducationModal from '../../components/modals/EducationModal';
-import ProfileInsights from '../../components/ProfileInsights';
 import { useAuth } from '@/contexts/AuthContext';
 import { profileAPI } from '../../lib/profileApi';
 import { authAPI, API_BASE_URL } from '../../lib/api';
@@ -218,9 +217,9 @@ const ProfilePage = () => {
               region: me.district || '' 
             },
             bio: me.bio || '',
-            status: me.jobStatus === 'unemployed' ? 'JOB_SEEKER' : 
+            status: (me.jobStatus === 'unemployed' ? 'JOB_SEEKER' : 
                    me.jobStatus === 'employed' ? 'EMPLOYED' : 
-                   me.jobStatus === 'self_employed' ? 'FREELANCER' : 'JOB_SEEKER',
+                   me.jobStatus === 'self_employed' ? 'FREELANCER' : 'JOB_SEEKER') as 'JOB_SEEKER' | 'EMPLOYED' | 'FREELANCER',
             skills: [], // Will load skills separately
             experience: (me.experience || []).map((exp: any) => ({
               id: exp._id,

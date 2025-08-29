@@ -1,18 +1,19 @@
+import * as React from 'react';
 import { FiUser, FiBriefcase, FiBook, FiUpload, FiPlus, FiMinus, FiEdit, FiTrash2, FiActivity, FiCheckCircle } from 'react-icons/fi';
 import { formatDistanceToNow } from 'date-fns';
-import { UserActivity } from '@/lib/activitiesApi';
+import type { UserActivity } from '@/lib/activitiesApi';
 
 export interface FormattedActivity {
   id: string;
   text: string;
   time: string;
-  icon: JSX.Element;
+  icon: React.ReactNode;
   activityType: string;
   metadata?: Record<string, any>;
 }
 
 // Activity type icons mapping
-const getActivityIcon = (activityType: string): JSX.Element => {
+const getActivityIcon = (activityType: string): React.ReactNode => {
   switch (activityType) {
     case 'profile_update':
       return <FiUser className="text-blue-500" />;

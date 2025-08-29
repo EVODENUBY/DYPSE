@@ -36,11 +36,6 @@ export default function SkillsModal({ isOpen, onClose, skills, onSave, isSaving 
     onSave(currentSkills);
   };
 
-  const handleSaveClick = () => {
-    console.log('SkillsModal: Save button clicked with skills:', currentSkills); // Debug log
-    onSave(currentSkills);
-  };
-
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && inputValue.trim()) {
       e.preventDefault();
