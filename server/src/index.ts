@@ -20,8 +20,8 @@ const app = express();
 // CORS configuration
 const allowedOrigins = [
   'http://localhost:3000',
-  'https://dypse-client.onrender.com', // Add your deployed frontend URL here
-  'https://dypse.onrender.com' // Also allow the backend's own domain
+  'https://dypsesm.vercel.app', //Frontend
+  'https://dypse.onrender.com' //backend's own domain
 ];
 
 const corsOptions = {

@@ -6,7 +6,7 @@ async function testPasswordReset() {
   try {
     // Test the request password reset endpoint
     console.log('📧 Testing request password reset...');
-    const response = await axios.post('http://localhost:5000/api/auth/request-password-reset', {
+    const response = await axios.post('https://dypse.onrender.com/api/auth/request-password-reset', {
       email: 'evodemuyisingize@gmail.com'
     });
 

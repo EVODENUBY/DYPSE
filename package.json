@@ -1,7 +1,7 @@
 {
   "name": "dypse",
   "version": "1.0.0",
-  "description": "DYPSE - Digital Youth Professional Services Exchange",
+  "description": "DYPSE - Dynamic Youth profiling system and skills ,mapping",
   "main": "server/index.ts",
   "scripts": {
     "dev": "cd server && npm run dev",
