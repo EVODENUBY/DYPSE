@@ -1,146 +1,555 @@
 import { useState } from 'react';
+import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
 import { NavBar } from '@/components/layout/NavBar';
 import { Footer } from '@/components/layout/Footer';
-import { FiChevronDown, FiChevronUp } from 'react-icons/fi';
+
+import { 
+  FaArrowRight, 
+  FaEnvelope, 
+  FaPhone, 
+  FaMapMarkerAlt,
+  FaLinkedin,
+  FaTwitter,
+  FaFacebook,
+  FaInstagram,
+} from 'react-icons/fa';
 
 export function ContactUsPage() {
-  const [openIndex, setOpenIndex] = useState<number | null>(null);
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    company: '',
+    subject: '',
+    message: ''
+  });
 
-  const toggleFAQ = (index: number) => {
-    setOpenIndex(openIndex === index ? null : index);
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
-  const faqs = [
-    { 
-      question: 'How do I join the program?', 
-      answer: 'To join our program, simply fill out the application form on our website. After submission, our team will review your application and contact you within 2-3 business days with the next steps.' 
-    },
-    { 
-      question: 'What are the requirements?', 
-      answer: 'Our program is open to individuals who are between 18-35 years old, have completed high school education, and demonstrate a strong interest in technology and career development. No prior experience is required for our beginner programs.' 
-    },
-    { 
-      question: 'Is there a cost to join?', 
-      answer: 'Our basic program is completely free of charge. We also offer premium services and advanced courses at a reasonable fee for those who want additional career support, mentorship, and specialized training.' 
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Handle form submission logic here
+    console.log('Form submitted:', formData);
+    // Reset form
+    setFormData({
+      name: '',
+      email: '',
+      company: '',
+      subject: '',
+      message: ''
+    });
+  };
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.2
+      }
     }
-  ];
+  };
+
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: {
+        duration: 0.6
+      }
+    }
+  };
+
+  const cardVariants = {
+    hidden: { scale: 0.8, opacity: 0 },
+    visible: {
+      scale: 1,
+      opacity: 1,
+      transition: {
+        duration: 0.5
+      }
+    },
+    hover: {
+      scale: 1.05,
+      y: -10,
+      transition: {
+        duration: 0.3
+      }
+    }
+  };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-b from-[#ddd3da] to-[#0033FF]">
+    <div className="min-h-screen flex flex-col bg-gray-50">
       <NavBar />
-      <main className="flex-1 py-12">
+      
+      {/* Hero Section */}
+      <section className="relative py-10 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-[#0033FF] to-[#000333DD] text-white">
+        <div className="max-w-7xl mx-auto">
+          <motion.div 
+            className="text-center"
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+          >
+            <h1 className="text-4xl md:text-6xl font-bold mb-6">
+              Contact Us
+            </h1>
+            <p className="text-xl md:text-xl mb-8 max-w-3xl mx-auto">
+              Get in touch with our team for inquiries, partnerships, support, or to learn more about DYPSE
+            </p>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Contact Information Section */}
+      <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-12">Contact Us</h1>
-          
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-            {/* Contact Form*/}
-            <div className="lg:col-span-2">
-              <form className="space-y-4">
-                <div>
-                  <input type="text" placeholder='Add your Full name' className="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500" />
-                </div>
+          <motion.div 
+            className="text-center mb-16"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
+          >
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">
+              Get In Touch
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Multiple ways to reach our team and get the support you need
+            </p>
+          </motion.div>
 
-                <div>
-                  <input type="email" placeholder='Add your Email' className="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500" />
+          <motion.div 
+            className="grid grid-cols-1 md:grid-cols-3 gap-8"
+            variants={containerVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+          >
+            {[
+              {
+                title: "Email Us",
+                description: "Send us a detailed message and we'll get back to you within 24 hours.",
+                icon: <FaEnvelope className="h-8 w-8" />,
+                gradient: "from-[#0033FF] to-[#000333DD]",
+                contact: "dypse.ict.chamber@gmail.com",
+                action: "Send Email"
+              },
+              {
+                title: "Call Us",
+                description: "Speak directly with our team for immediate assistance and support.",
+                icon: <FaPhone className="h-8 w-8" />,
+                gradient: "from-blue-600 to-blue-700",
+                contact: "+250 791 783 308",
+                action: "Call Now"
+              },
+              {
+                title: "Visit Us",
+                description: "Drop by our office for in-person meetings and consultations.",
+                icon: <FaMapMarkerAlt className="h-8 w-8" />,
+                gradient: "from-blue-500 to-blue-600",
+                contact: "Kigali, Rwanda",
+                action: "Get Directions"
+              }
+            ].map((info, index) => (
+              <motion.div
+                key={index}
+                variants={cardVariants}
+                whileHover="hover"
+                className="text-center p-8 rounded-2xl bg-white shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100"
+              >
+                <div className={`h-16 w-16 rounded-2xl bg-gradient-to-br ${info.gradient} flex items-center justify-center text-white mx-auto mb-6 group-hover:scale-110 transition-transform duration-300`}>
+                  {info.icon}
                 </div>
-
-                <div>
-                  <textarea rows={3} placeholder='Type Your message' className="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"></textarea>
-                </div>
-
-                <button type="submit" className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
-                  Send The Message
+                <h3 className="text-xl font-bold text-gray-900 mb-4">{info.title}</h3>
+                <p className="text-gray-600 mb-4">{info.description}</p>
+                <div className="text-lg font-semibold text-gray-900 mb-4">{info.contact}</div>
+                <button className={`px-6 py-2 rounded-lg bg-gradient-to-r ${info.gradient} text-white font-medium hover:opacity-90 transition-opacity duration-200`}>
+                  {info.action}
                 </button>
-              </form>
-            </div>
+              </motion.div>
+            ))}
+          </motion.div>
+        </div>
+      </section>
 
-            {/* Right Column - Contact Info and FAQ */}
-            <div className="space-y-4">
-              {/* Contact Info Card */}
-              <div className="bg-white p-4 rounded-xl shadow-md">
-                <div className="h-32 mb-4 rounded-lg overflow-hidden">
-                  <iframe 
-                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3987.527762567957!2d30.06108631475396!3d-1.9440729985847988!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x19dca4258ed2f5b9%3A0x1b3b3d5d3a3e0b0a5!2sKigali%2C%20Rwanda!5e0!3m2!1sen!2sus!4v1620000000000!5m2!1sen!2sus" 
-                    width="100%" 
-                    height="100%" 
-                    style={{ border: 0 }} 
-                    allowFullScreen 
-                    loading="lazy"
-                    title="Kigali, Rwanda"
-                  ></iframe>
+      {/* Contact Form Section */}
+      <section className="py-20 bg-gradient-to-br from-blue-50 to-blue-100">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div 
+            className="text-center mb-16"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
+          >
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">
+              Send Us a Message
+            </h2>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              Fill out the form below and we'll get back to you as soon as possible
+            </p>
+          </motion.div>
+
+          <motion.div
+            variants={itemVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            className="bg-white rounded-2xl shadow-xl p-8"
+          >
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+                    Full Name *
+                  </label>
+                  <input
+                    type="text"
+                    id="name"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200"
+                    placeholder="Enter your full name"
+                  />
                 </div>
-                
-                <div className="space-y-4">
-                  <div className="flex items-start">
-                    <div className="flex-shrink-0 h-6 w-6 text-blue-600">
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
-                    </div>
-                    <div className="ml-3 text-base text-gray-700">
-                      <p>KG500 Nyarugenge</p>
-                      <p>Kigali, Rwanda</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start">
-                    <div className="flex-shrink-0 h-6 w-6 text-blue-600">
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                      </svg>
-                    </div>
-                    <div className="ml-3 text-base text-gray-700">
-                      <p>dypse.ict.chamber@gmail.com</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start">
-                    <div className="flex-shrink-0 h-6 w-6 text-blue-600">
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                      </svg>
-                    </div>
-                    <div className="ml-3 text-base text-gray-700">
-                      <p>+(250)791 783 308</p>
-                    </div>
-                  </div>
+                <div>
+                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                    Email Address *
+                  </label>
+                  <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200"
+                    placeholder="Enter your email address"
+                  />
                 </div>
+                </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label htmlFor="company" className="block text-sm font-medium text-gray-700 mb-2">
+                    Company/Organization
+                  </label>
+                  <input
+                    type="text"
+                    id="company"
+                    name="company"
+                    value={formData.company}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200"
+                    placeholder="Enter your company name"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="subject" className="block text-sm font-medium text-gray-700 mb-2">
+                    Subject *
+                  </label>
+                  <select
+                    id="subject"
+                    name="subject"
+                    value={formData.subject}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200"
+                  >
+                    <option value="">Select a subject</option>
+                    <option value="general">General Inquiry</option>
+                    <option value="partnership">Partnership Opportunity</option>
+                    <option value="support">Technical Support</option>
+                    <option value="feedback">Feedback & Suggestions</option>
+                    <option value="media">Media & Press</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+                </div>
+
+                <div>
+                <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-2">
+                  Message *
+                </label>
+                <textarea
+                  id="message"
+                  name="message"
+                  value={formData.message}
+                  onChange={handleInputChange}
+                  required
+                  rows={6}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200"
+                  placeholder="Tell us more about your inquiry..."
+                />
+                </div>
+
+              <div className="text-center">
+                <button
+                  type="submit"
+                  className="inline-flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-gradient-to-r from-[#0033FF] to-[#000333DD] hover:from-blue-700 hover:to-blue-800 md:py-4 md:text-lg md:px-10 transition-all duration-200"
+                >
+                  Send Message <FaArrowRight className="ml-2" />
+                </button>
               </div>
+              </form>
+          </motion.div>
+            </div>
+      </section>
+
+      {/* Office Location Section */}
+      <section className="py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div 
+            className="text-center mb-16"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
+          >
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">
+              Our Office
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Visit us in Kigali, Rwanda for in-person meetings and consultations
+            </p>
+          </motion.div>
+
+          <motion.div 
+            className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center"
+            variants={containerVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+          >
+            <motion.div variants={itemVariants}>
+              <h3 className="text-3xl font-bold text-gray-900 mb-6">
+                DYPSE Headquarters
+              </h3>
+              <div className="space-y-6">
+                <div className="flex items-start space-x-4">
+                  <div className="h-6 w-6 rounded-full bg-[#0033FF] flex items-center justify-center text-white text-sm font-bold mt-1">📍</div>
+                  <div>
+                    <h4 className="text-lg font-semibold text-gray-900 mb-2">Address</h4>
+                    <p className="text-gray-600">KG 123 St, Kigali, Rwanda</p>
+                  </div>
+                </div>
+                <div className="flex items-start space-x-4">
+                  <div className="h-6 w-6 rounded-full bg-[#0033FF] flex items-center justify-center text-white text-sm font-bold mt-1">🕒</div>
+                  <div>
+                    <h4 className="text-lg font-semibold text-gray-900 mb-2">Business Hours</h4>
+                    <p className="text-gray-600">Monday - Friday: 8:00 AM - 6:00 PM</p>
+                    <p className="text-gray-600">Saturday: 9:00 AM - 1:00 PM</p>
+                </div>
+                    </div>
+                <div className="flex items-start space-x-4">
+                  <div className="h-6 w-6 rounded-full bg-[#0033FF] flex items-center justify-center text-white text-sm font-bold mt-1">📞</div>
+                  <div>
+                    <h4 className="text-lg font-semibold text-gray-900 mb-2">Phone</h4>
+                    <p className="text-gray-600">+250 788 123 456</p>
+                    <p className="text-gray-600">+250 788 123 457</p>
+                    </div>
+                  </div>
+                <div className="flex items-start space-x-4">
+                  <div className="h-6 w-6 rounded-full bg-[#0033FF] flex items-center justify-center text-white text-sm font-bold mt-1">✉️</div>
+                  <div>
+                    <h4 className="text-lg font-semibold text-gray-900 mb-2">Email</h4>
+                    <p className="text-gray-600">info@dypse.rw</p>
+                    <p className="text-gray-600">support@dypse.rw</p>
+                    </div>
+                    </div>
+                  </div>
+            </motion.div>
+            
+            <motion.div variants={itemVariants} className="relative">
+              <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-8 rounded-2xl">
+                <div className="text-center">
+                  <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-[#0033FF] to-[#000333DD] flex items-center justify-center text-white mx-auto mb-6">
+                    <FaMapMarkerAlt className="h-10 w-10" />
+                    </div>
+                  <h3 className="text-2xl font-bold text-gray-900 mb-4">Get Directions</h3>
+                  <p className="text-gray-600 mb-6">
+                    Our office is located in the heart of Kigali, easily accessible by public transport and car.
+                  </p>
+                  <button className="px-6 py-3 rounded-lg bg-gradient-to-r from-[#0033FF] to-[#000333DD] text-white font-medium hover:opacity-90 transition-opacity duration-200">
+                    Open in Maps
+                  </button>
+                    </div>
+                  </div>
+            </motion.div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Social Media & Additional Contact Section */}
+      <section className="py-20 bg-gradient-to-br from-gray-50 to-blue-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div 
+            className="text-center mb-16"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
+          >
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">
+              Connect With Us
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Follow us on social media and stay updated with the latest news and opportunities
+            </p>
+          </motion.div>
+
+          <motion.div 
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8"
+            variants={containerVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+          >
+            {[
+              {
+                platform: "LinkedIn",
+                description: "Follow us for professional updates and networking opportunities",
+                icon: <FaLinkedin className="h-8 w-8" />,
+                gradient: "from-blue-500 to-blue-600",
+                handle: "@dypse-rwanda"
+              },
+              {
+                platform: "Twitter",
+                description: "Get real-time updates and announcements",
+                icon: <FaTwitter className="h-8 w-8" />,
+                gradient: "from-sky-500 to-sky-600",
+                handle: "@dypse_rwanda"
+              },
+              {
+                platform: "Facebook",
+                description: "Join our community and engage with other members",
+                icon: <FaFacebook className="h-8 w-8" />,
+                gradient: "from-indigo-500 to-indigo-600",
+                handle: "DYPSE Rwanda"
+              },
+              {
+                platform: "Instagram",
+                description: "Visual updates and behind-the-scenes content",
+                icon: <FaInstagram className="h-8 w-8" />,
+                gradient: "from-pink-500 to-pink-600",
+                handle: "@dypse_rwanda"
+              }
+            ].map((social, index) => (
+              <motion.div
+                key={index}
+                variants={cardVariants}
+                whileHover="hover"
+                className="text-center p-8 rounded-2xl bg-white shadow-lg hover:shadow-xl transition-all duration-300"
+              >
+                <div className={`h-16 w-16 rounded-2xl bg-gradient-to-br ${social.gradient} flex items-center justify-center text-white mx-auto mb-6 group-hover:scale-110 transition-transform duration-300`}>
+                  {social.icon}
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-4">{social.platform}</h3>
+                <p className="text-gray-600 mb-4">{social.description}</p>
+                <div className="text-lg font-semibold text-gray-900">{social.handle}</div>
+              </motion.div>
+            ))}
+          </motion.div>
+              </div>
+      </section>
 
               {/* FAQ Section */}
-              <div className="bg-white p-4 rounded-xl shadow-md">
-                <h2 className="text-lg font-bold text-gray-900 mb-3">Frequently Asked Questions</h2>
-                <div className="space-y-2 text-sm">
-                  {faqs.map((faq, index) => (
-                    <div key={index} className="border border-gray-200 rounded-lg overflow-hidden">
-                      <button
-                        onClick={() => toggleFAQ(index)}
-                        className="w-full flex justify-between items-center p-3 text-left hover:bg-gray-50 transition-colors text-sm"
-                        aria-expanded={openIndex === index}
-                        aria-controls={`faq-${index}`}
-                      >
-                        <span className="font-medium text-gray-900">{faq.question}</span>
-                        {openIndex === index ? (
-                          <FiChevronUp className="h-4 w-4 text-gray-500 flex-shrink-0" />
-                        ) : (
-                          <FiChevronDown className="h-4 w-4 text-gray-500 flex-shrink-0" />
-                        )}
-                      </button>
-                      <div 
-                        id={`faq-${index}`}
-                        className={`px-3 pb-3 text-sm ${openIndex === index ? 'block' : 'hidden'}`}
-                      >
+      <section className="py-20 bg-white">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div 
+            className="text-center mb-16"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
+          >
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">
+              Frequently Asked Questions
+            </h2>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              Quick answers to common questions about contacting and working with DYPSE
+            </p>
+          </motion.div>
+
+          <motion.div 
+            className="space-y-6"
+            variants={containerVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+          >
+            {[
+              {
+                question: "How quickly do you respond to inquiries?",
+                answer: "We typically respond to all inquiries within 24 hours during business days. For urgent matters, please call us directly."
+              },
+              {
+                question: "Can I schedule a meeting with your team?",
+                answer: "Yes! We welcome meetings and consultations. You can schedule through our contact form or call us directly to arrange a convenient time."
+              },
+              {
+                question: "Do you offer support in multiple languages?",
+                answer: "Yes, we provide support in English, French, and Kinyarwanda to serve our diverse community effectively."
+              },
+              {
+                question: "How can I become a partner or collaborator?",
+                answer: "We're always open to partnerships! Please use our contact form and select 'Partnership Opportunity' as the subject to get started."
+              }
+            ].map((faq, index) => (
+              <motion.div
+                key={index}
+                variants={itemVariants}
+                className="bg-gray-50 rounded-2xl p-6 hover:bg-gray-100 transition-colors duration-200"
+              >
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">{faq.question}</h3>
                         <p className="text-gray-600">{faq.answer}</p>
-                      </div>
-                    </div>
+              </motion.div>
                   ))}
+          </motion.div>
                 </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-20 bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
+          >
+            <h2 className="text-4xl font-bold mb-6">Ready to Get Started?</h2>
+            <p className="text-xl mb-8 max-w-2xl mx-auto">
+              Contact us today to learn more about DYPSE and how we can help you achieve your goals
+            </p>
+            <div className="flex flex-col sm:flex-row justify-center gap-4">
+              <Link 
+                to="/signup" 
+                className="inline-flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-blue-600 bg-white hover:bg-gray-50 md:py-4 md:text-lg md:px-10 transition-colors duration-200"
+              >
+                Get Started <FaArrowRight className="ml-2" />
+              </Link>
+              <Link 
+                to="/demo" 
+                className="inline-flex items-center justify-center px-8 py-3 border border-white text-base font-medium rounded-md text-white hover:bg-white hover:text-blue-600 md:py-4 md:text-lg md:px-10 transition-colors duration-200"
+              >
+                Request Demo <FaArrowRight className="ml-2" />
+              </Link>
               </div>
+          </motion.div>
             </div>
-          </div>
-        </div>
-      </main>
+      </section>
+
       <Footer />
     </div>
   );

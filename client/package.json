@@ -23,6 +23,7 @@
     "chart.js": "^4.5.0",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
+    "framer-motion": "^12.23.12",
     "openai": "^5.12.2",
     "react": "^19.1.1",
     "react-big-calendar": "^1.19.4",

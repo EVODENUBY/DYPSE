@@ -4,6 +4,9 @@ import { NotificationProvider } from './contexts/NotificationContext';
 import { HomePage } from './pages/HomePage';
 import { AboutUsPage } from './pages/AboutUsPage';
 import { ContactUsPage } from './pages/ContactUsPage';
+import { ProblemStatementPage } from './pages/ProblemsPage';
+import { SolutionPage } from './pages/SolutionsPage';
+import { FeaturesPage } from './pages/FeaturesPage';
 import { LoginPage } from './pages/auth/LoginPage';
 import { SignupPage } from './pages/auth/SignupPage';
 import { ForgotPasswordPage } from './pages/auth/ForgotPasswordPage';
@@ -75,6 +78,9 @@ function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/about-us" element={<AboutUsPage />} />
           <Route path="/contact" element={<ContactUsPage />} />
+          <Route path="/features" element={<FeaturesPage />} />
+          <Route path="/ProblemsPage" element={<ProblemStatementPage />} />
+          <Route path="/SolutionsPage" element={<SolutionPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
