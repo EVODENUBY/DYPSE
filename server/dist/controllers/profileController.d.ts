@@ -1,0 +1,19 @@
+import { Request, Response } from 'express';
+export declare const getMyProfile: (req: Request, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+export declare const updateMyProfile: (req: Request, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+export declare const uploadProfilePicture: (req: Request, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+export declare const uploadCV: (req: Request, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+export declare const getMySkills: (req: Request, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+export declare const searchSkills: (req: Request, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+export declare const createSkill: (req: Request, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+export declare const upsertSkill: (req: Request, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+export declare const deleteSkill: (req: Request, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+export declare const addExperience: (req: Request, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+export declare const updateExperience: (req: Request, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+export declare const deleteExperience: (req: Request, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+export declare const addEducation: (req: Request, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+export declare const updateEducation: (req: Request, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+export declare const deleteEducation: (req: Request, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+export declare const getProfileInsights: (req: Request, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+export declare const getProfileAnalytics: (req: Request, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+//# sourceMappingURL=profileController.d.ts.map
