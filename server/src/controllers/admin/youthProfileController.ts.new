@@ -1,0 +1,77 @@
+import { Request, Response } from 'express';
+import mongoose from 'mongoose';
+import { User, UserRole, IUser } from '../../models/user.model';
+import { YouthProfile } from '../../models/youthProfile.model';
+import { AppError } from '../../utils/errorHandler.js';
+
+export const getAllYouths = async (req: Request, res: Response) => {
+  try {
+    // First, get all youth users
+    const users = await (User as any).find({ role: UserRole.YOUTH })
+      .select('email role isVerified updatedAt')
+      .lean();
+
+    // Get all youth profiles for these users with populated education and skills
+    const userIds = users.map(u => u._id);
+    const youthProfiles = await (YouthProfile as any).find({ 
+      userId: { $in: userIds } 
+    })
+    .populate('skills', 'name')
+    .populate('education')
+    .lean();
+
+    // Create a map of userId -> profile for easy lookup
+    const profileMap = new Map();
+    youthProfiles.forEach(profile => {
+      profileMap.set(profile.userId.toString(), profile);
+    });
+
+    // Transform the data to match the frontend expectations
+    const result = users.map(user => {
+      const profile = profileMap.get(user._id.toString());
+      
+      // Ensure isVerified is always a boolean (default to false if undefined)
+      const isVerified = user.isVerified === true;
+      
+      // Format education with both degree and field of study
+      const education = profile?.education?.[0] 
+        ? `${profile.education[0].degree} in ${profile.education[0].fieldOfStudy || 'N/A'}`
+        : 'N/A';
+      
+      // Handle both populated and unpopulated skills
+      const skills = profile?.skills?.map(skill => 
+        typeof skill === 'object' ? skill.name : skill
+      ) || [];
+      
+      return {
+        _id: user._id,
+        firstName: profile?.firstName || 'N/A',
+        lastName: profile?.lastName || '',
+        location: profile?.district || 'N/A',
+        dob: profile?.dateOfBirth || null,
+        education,
+        skills,
+        jobStatus: profile?.jobStatus || 'unemployed',
+        updatedAt: user.updatedAt,
+        phone: profile?.phoneNumber || 'N/A',
+        email: user.email,
+        isVerified,
+        profilePicture: profile?.profilePicture
+      };
+    });
+
+    res.status(200).json({
+      success: true,
+      data: result,
+      message: 'Youth profiles retrieved successfully'
+    });
+  } catch (error) {
+    console.error('Error fetching youth profiles:', error);
+    throw new AppError(
+      error instanceof Error ? error.message : 'Failed to fetch youth profiles',
+      500
+    );
+  }
+};
+
+// ... rest of the file remains the same

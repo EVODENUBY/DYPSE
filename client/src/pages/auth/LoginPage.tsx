@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { FaEnvelope, FaLock, FaEye, FaEyeSlash } from 'react-icons/fa';
 import { Card, CardHeader, CardDescription, CardContent } from '@/components/ui/Card';
 import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton';
@@ -9,9 +9,15 @@ import { Chatbot } from '@/components/chatbot/Chatbot';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'react-hot-toast';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { NetworkError, ApiError } from '@/lib/api';
 
 export function LoginPage() {
-  const [email, setEmail] = useState('');
+  const navigate = useNavigate();
+  // Get email from URL params if coming from signup
+  const searchParams = new URLSearchParams(window.location.search);
+  const emailFromSignup = searchParams.get('email') || '';
+  
+  const [email, setEmail] = useState(emailFromSignup);
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -21,30 +27,75 @@ export function LoginPage() {
   
   const { login } = useAuth();
 
-const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setError("");
-  setNetworkError(false);
-
-  if (!email.trim()) {
-    setError("Please enter your email address");
-    return;
-  }
-  if (!password) {
-    setError("Please enter your password");
-    return;
-  }
-
-  setIsLoading(true);
-  const result = await login(email, password);
-  setIsLoading(false);
-
-  if (!result.success) {
-    setError(result.message || "Invalid email or password");
-    toast.error(result.message || "Invalid email or password");
-  }
-
-};
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Reset error states
+    setError('');
+    setNetworkError(false);
+    
+    // Basic validation
+    if (!email.trim()) {
+      setError('Please enter your email address');
+      return;
+    }
+    
+    if (!password) {
+      setError('Please enter your password');
+      return;
+    }
+    
+    // Clear any previous errors
+    setError('');
+    setIsLoading(true);
+    
+    try {
+      const result = await login(email, password);
+      
+      if (!result.success) {
+        setError(result.message || 'Login failed. Please try again.');
+      }
+      //On success, AuthContext handles the redirect and success message
+      
+    } catch (err) {
+      console.error('Login error:', err);
+      
+      let errorMessage = 'An unexpected error occurred. Please try again.';
+      let isNetworkError = false;
+      
+      if (err instanceof NetworkError) {
+        errorMessage = err.message;
+        isNetworkError = true;
+      } else if (err instanceof ApiError) {
+        // Handle specific API error codes
+        switch (err.code) {
+          case 'INVALID_CREDENTIALS':
+            errorMessage = 'Invalid email or password. Please try again.';
+            break;
+          case 'ACCOUNT_LOCKED':
+            errorMessage = 'Your account has been locked. Please contact support.';
+            break;
+          case 'EMAIL_NOT_VERIFIED':
+            errorMessage = 'Please verify your email before logging in.';
+            break;
+          default:
+            errorMessage = err.message || 'An error occurred during login';
+        }
+      } else if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+      
+      setError(errorMessage);
+      setNetworkError(isNetworkError);
+      
+      // Only show toast for non-validation errors
+      if (!errorMessage.includes('Please enter')) {
+        toast.error(errorMessage);
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleGoogleSignIn = () => {
     // TODO: Implement Google OAuth
@@ -66,12 +117,12 @@ const handleSubmit = async (e: React.FormEvent) => {
       <div className={`flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 ${primaryGradient} bg-cover bg-center`}>
         <div className="w-full max-w-md">
           <Card className="w-full bg-white/90 backdrop-blur-sm shadow-xl overflow-hidden">
-            <div className="px-8 py-2 bg-gradient-to-r from-blue-600 to-purple-600">
-              <h1 className="text-2xl font-bold text-white text-center py-2">DYPSE</h1>
+            <div className="px-8 py-2 bg-gradient-to-r from-blue-600 to-purple-400">
+              <h1 className="text-xl font-bold text-white text-center py-2">DYNAMIC YOUTH PROFILING SYSTEM</h1>
             </div>
             <CardHeader className="space-y-1 text-center pb-2">
-              <CardDescription className="text-gray-600">
-                For every youth, a path. For every path, a future
+              <CardDescription className="text-gray-600 font-semibold">
+                For Every Youth, a Path. For Every Path, a Future
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -93,9 +144,14 @@ const handleSubmit = async (e: React.FormEvent) => {
               
               <form onSubmit={handleSubmit} className="space-y-4">
                 {(error || networkError) && (
-                  <div className={`rounded-md p-4 mb-4 ${
-                    networkError ||error ? 'bg-yellow-50 border-l-4 border-yellow-400' : 'bg-red-50'
-                  }`}>
+                  <div 
+                    className={`rounded-md p-4 mb-4 ${
+                      networkError 
+                        ? 'bg-yellow-50 border-l-4 border-yellow-400' 
+                        : 'bg-red-50 border-l-4 border-red-400'
+                    }`}
+                    role="alert"
+                  >
                     <div className="flex">
                       <div className="flex-shrink-0">
                         {networkError ? (
@@ -109,9 +165,9 @@ const handleSubmit = async (e: React.FormEvent) => {
                         )}
                       </div>
                       <div className="ml-3">
-                        <h3 className={`text-sm font-medium ${networkError ? 'text-yellow-800' : 'text-red-800'}`}>
+                        <p className={`text-sm ${networkError ? 'text-yellow-700' : 'text-red-700'}`}>
                           {error}
-                        </h3>
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -130,7 +186,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                     autoComplete="email"
                     required
                     disabled={isLoading}
-                    className={`pl-10 appearance-none relative block w-full px-3 py-2 border ${error ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-transparent'} placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-2 sm:text-sm transition-colors`}
+                    className={`pl-10 appearance-none relative block w-full px-3 py-2 border border-gray-400 ${error ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-transparent'} placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-2 sm:text-sm transition-colors`}
                     placeholder="Email address"
                     value={email}
                     onChange={(e) => {
@@ -158,7 +214,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                     type={showPassword ? "text" : "password"}
                     autoComplete="current-password"
                     required
-                    className={`pl-10 pr-10 appearance-none relative block w-full px-3 py-2 border ${error ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-transparent'} placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-2 sm:text-sm transition-colors`}
+                    className={`pl-10 pr-10 appearance-none relative block w-full px-3 py-2 border  border-gray-400 ${error ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-transparent'} placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-2 sm:text-sm transition-colors`}
                     placeholder="Password"
                     value={password}
                     disabled={isLoading}

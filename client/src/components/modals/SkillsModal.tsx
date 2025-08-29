@@ -32,6 +32,12 @@ export default function SkillsModal({ isOpen, onClose, skills, onSave, isSaving 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('SkillsModal: Form submitted with skills:', currentSkills); // Debug log
+    onSave(currentSkills);
+  };
+
+  const handleSaveClick = () => {
+    console.log('SkillsModal: Save button clicked with skills:', currentSkills); // Debug log
     onSave(currentSkills);
   };
 

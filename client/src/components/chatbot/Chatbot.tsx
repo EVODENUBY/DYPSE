@@ -17,7 +17,7 @@ export function Chatbot() {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 1,
-      text: 'Hello! I\'m your DYPSM assistant. I can help you with job applications, skills training, and career guidance. How can I assist you today?',
+      text: 'Hello! I\'m your DYPSE assistant. I can help you with job Opportunities & applications, skills training, and career guidance. How can I assist you today?',
       sender: 'bot',
       timestamp: new Date(),
     },

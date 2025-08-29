@@ -11,8 +11,10 @@ import {
 } from 'react-icons/fi';
 import { FaUserGraduate, FaChartLine } from 'react-icons/fa';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { useAuth } from '@/contexts/AuthContext';
 
 const EmployerDashboardPage: React.FC = () => {
+  const { user } = useAuth();
   // Chart data
   const employmentData = [
     { month: 'Jan', employed: 65 },
@@ -109,7 +111,9 @@ const EmployerDashboardPage: React.FC = () => {
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">Dashboard</h1>
-          <p className="text-gray-600">Welcome back! Here's what's happening with your business.</p>
+          <p className="text-gray-600">
+            Welcome back{user?.companyName ? `, ${user.companyName}` : user?.firstName ? `, ${user.firstName}` : ''}! Here's what's happening with your business.
+          </p>
         </div>
         
         {/* Updates Card */}

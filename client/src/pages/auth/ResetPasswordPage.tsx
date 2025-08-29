@@ -7,7 +7,7 @@ import { NavBar } from '@/components/layout/NavBar';
 import { primaryGradient } from '@/theme';
 import { Chatbot } from '@/components/chatbot/Chatbot';
 import { toast } from 'react-hot-toast';
-import api from '@/lib/api';
+import { authAPI } from '@/lib/api';
 
 export function ResetPasswordPage() {
   const [searchParams] = useSearchParams();
@@ -32,7 +32,7 @@ export function ResetPasswordPage() {
       return;
     }
     
-    // In a real app, you might want to validate the token with the server
+    //validate token
     setTokenValid(true);
   }, [token]);
 
@@ -59,10 +59,7 @@ export function ResetPasswordPage() {
       setIsLoading(true);
       
       // Call the API to reset the password
-      await api.post('/auth/reset-password', {
-        token,
-        password
-      });
+      await authAPI.resetPassword(token, password);
       
       // Show success message
       toast.success('Your password has been reset successfully!', {
@@ -91,8 +88,8 @@ export function ResetPasswordPage() {
         <div className={`flex items-center justify-center min-h-[calc(100vh-64px)] py-12 px-4 sm:px-6 lg:px-8 ${primaryGradient} bg-cover bg-center`}>
           <div className="w-full max-w-md">
             <Card className="w-full bg-white/90 backdrop-blur-sm shadow-xl overflow-hidden">
-              <div className="px-8 py-2 bg-gradient-to-r from-blue-600 to-purple-600">
-                <h1 className="text-2xl font-bold text-white text-center py-2">DYPSM</h1>
+              <div className="px-8 py-2 bg-gradient-to-r from-blue-600 to-purple-400">
+                <h1 className="text-xl font-bold text-white text-center py-2">DYNAMIC YOUTH PROFILING SYSTEM</h1>
               </div>
               
               <CardHeader className="space-y-1 text-center pb-2">
@@ -164,7 +161,7 @@ export function ResetPasswordPage() {
         <div className="w-full max-w-md">
           <Card className="w-full bg-white/90 backdrop-blur-sm shadow-xl overflow-hidden">
             <div className="px-8 py-2 bg-gradient-to-r from-blue-600 to-purple-600">
-              <h1 className="text-2xl font-bold text-white text-center py-2">DYPSE</h1>
+              <h1 className="text-xl font-bold text-white text-center py-2">DYNAMIC YOUTH PROFILING SYSTEM</h1>
             </div>
             
             <CardHeader className="space-y-1 text-center pb-2">

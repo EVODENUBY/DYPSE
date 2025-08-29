@@ -7,7 +7,7 @@ import { NavBar } from '@/components/layout/NavBar';
 import { primaryGradient } from '@/theme';
 import { Chatbot } from '@/components/chatbot/Chatbot';
 import { toast } from 'react-hot-toast';
-import  api  from '@/lib/api';
+import { authAPI } from '@/lib/api';
 
 export function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -30,7 +30,7 @@ export function ForgotPasswordPage() {
       setError('');
       
       // Call the API to request password reset
-      await api.post('/auth/request-password-reset', { email });
+      await authAPI.requestPasswordReset(email);
       
       // Show success message
       toast.success('Password reset link sent to your email!', {
@@ -59,16 +59,16 @@ export function ForgotPasswordPage() {
            <div className="w-full max-w-md">
              <Card className="w-full bg-white/90 backdrop-blur-sm shadow-xl overflow-hidden">
                <div className="px-8 py-2 bg-gradient-to-r from-blue-600 to-purple-600">
-                 <h1 className="text-2xl font-bold text-white text-center py-2">DYPSE</h1>
+                 <h1 className="text-xl font-bold text-white text-center py-2">DYNAMIC YOUTH PROFILING SYSTEM</h1>
                </div>
                
             
             <CardHeader>
-              <h2 className="text-2xl font-bold text-gray-800">Forgot Password</h2>
+              <h2 className="text-2xl font-bold text-gray-800">Forgot Your Password</h2>
               <CardDescription className="text-gray-600">
                 {isSubmitted
                   ? 'Check your email for further instructions.'
-                  : 'Enter your email and we\'ll send you a link to reset your password.'}
+                  : 'Enter your email and we\'ll send you a link to reset your password in Your email.'}
               </CardDescription>
             </CardHeader>
 
@@ -103,8 +103,8 @@ export function ForgotPasswordPage() {
                       autoComplete="email"
                       required
                       disabled={isLoading}
-                      className={`pl-10 appearance-none relative block w-full px-3 py-2 border ${error ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'} placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 sm:text-sm transition-colors`}
-                      placeholder="Email address"
+                      className={`pl-10 appearance-none relative block w-full px-3 py-2 border border-gray-400 ${error ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'} placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 sm:text-sm transition-colors`}
+                      placeholder="Enter Your DYPSE Email address"
                       value={email}
                       onChange={(e) => {
                         setEmail(e.target.value);

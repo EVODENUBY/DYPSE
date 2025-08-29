@@ -4,12 +4,17 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useNotifications } from '@/contexts/NotificationContext';
 import { formatDistanceToNow } from 'date-fns';
 import { NotificationBadge } from '@/components/common/NotificationBadge';
+import { profileAPI } from '@/lib/profileApi';
 import { 
   BellIcon, 
   MagnifyingGlassIcon as SearchIcon, 
   ChevronDownIcon,
+  UserGroupIcon,
   UsersIcon,
-  UserGroupIcon
+  CogIcon,
+  ArrowRightOnRectangleIcon,
+
+  UserIcon
 } from '@heroicons/react/24/outline';
 
 
@@ -21,12 +26,49 @@ const YouthNavbar: React.FC<YouthNavbarProps> = ({ onToggleSidebar }) => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [showNotifications, setShowNotifications] = useState(false);
+  const [profileData, setProfileData] = useState<any>(null);
   const profileRef = useRef<HTMLDivElement>(null);
   const notificationRef = useRef<HTMLDivElement>(null);
   
   const { user, logout } = useAuth();
   const { notifications, markAsRead } = useNotifications();
   const navigate = useNavigate();
+  
+  // Helper function to create absolute URLs for uploaded files
+  const apiBase = (import.meta.env.VITE_API_BASE_URL as string) || 'http://localhost:5000/api';
+  const uploadsBase = apiBase.replace(/\/api\/?$/, '');
+  const toAbsolute = (p: string | null): string | null => {
+    if (!p) return null;
+    return p.startsWith('/uploads/') ? `${uploadsBase}${p}` : p;
+  };
+  
+  // Load profile data for navbar
+  useEffect(() => {
+    const loadProfileData = async () => {
+      if (!user) return;
+      
+      try {
+        const profile = await profileAPI.getMyProfile();
+        if (profile) {
+          setProfileData({
+            firstName: profile.firstName || user?.firstName || '',
+            lastName: profile.lastName || user?.lastName || '',
+            profilePicture: toAbsolute(profile.profilePicture || null)
+          });
+        }
+      } catch (error) {
+        console.warn('Failed to load profile data for navbar:', error);
+        // Set fallback data
+        setProfileData({
+          firstName: user?.firstName || '',
+          lastName: user?.lastName || '',
+          profilePicture: null
+        });
+      }
+    };
+    
+    loadProfileData();
+  }, [user]);
 
   const youthNotifications = notifications.filter(
     notification => notification.target === 'all' || notification.target === 'youths'
@@ -58,6 +100,7 @@ const YouthNavbar: React.FC<YouthNavbarProps> = ({ onToggleSidebar }) => {
   }, []);
   
   const getInitials = (name: string) => {
+    if (!name) return '';
     return name
       .split(' ')
       .map(part => part[0])
@@ -127,7 +170,7 @@ const YouthNavbar: React.FC<YouthNavbarProps> = ({ onToggleSidebar }) => {
 
           {/* Right side - User menu */}
           <div className="ml-4 flex items-center md:ml-6">
-            <div className="relative" ref={notificationRef}>
+            <div className="relative mr-4" ref={notificationRef}>
               <button
                 type="button"
                 className="p-1 rounded-full text-gray-500 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 relative"
@@ -167,26 +210,28 @@ const YouthNavbar: React.FC<YouthNavbarProps> = ({ onToggleSidebar }) => {
                             className={`block px-4 py-3 hover:bg-gray-50 ${
                               !notification.read ? 'bg-blue-50' : ''
                             }`}
-                            onClick={() => markAsRead(notification.id)}
+                            onClick={() => setShowNotifications(false)}
                           >
                             <div className="flex items-start">
-                              <div className={`flex-shrink-0 mt-0.5 ${iconColor}`}>
-                                <Icon className="h-4 w-4" />
+                              <div className={`flex-shrink-0 h-6 w-6 ${iconColor}`}>
+                                <Icon className="h-full w-full" />
                               </div>
-                              <div className="ml-3 flex-1">
-                                <div className="flex justify-between items-start">
-                                  <p className="text-sm font-medium text-gray-900">
-                                    {notification.title}
-                                  </p>
-                                  <span className="text-xs text-gray-400">
-                                    {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
-                                  </span>
+                              <div className="ml-3">
+                                <p className="text-sm font-medium text-gray-900">
+                                  {notification.title}
+                                </p>
+                                <p className="text-xs text-gray-500 mt-1">
+                                  {notification.message}
+                                </p>
+                                <p className="text-xs text-gray-400 mt-1">
+                                  {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
+                                </p>
+                              </div>
+                              {!notification.read && (
+                                <div className="ml-auto">
+                                  <span className="h-2 w-2 rounded-full bg-blue-500 block"></span>
                                 </div>
-                                <p className="text-sm text-gray-600 mt-1">{notification.message}</p>
-                                {!notification.read && (
-                                  <span className="inline-block h-2 w-2 rounded-full bg-blue-500 mt-1"></span>
-                                )}
-                              </div>
+                              )}
                             </div>
                           </Link>
                         );
@@ -197,80 +242,99 @@ const YouthNavbar: React.FC<YouthNavbarProps> = ({ onToggleSidebar }) => {
                       </div>
                     )}
                   </div>
-                  <div className="border-t border-gray-100 bg-gray-50 text-center rounded-b-md">
-                    <Link
-                      to="/youth/notifications"
-                      className="block py-2 text-sm font-medium text-blue-600 hover:bg-gray-100"
-                      onClick={() => setShowNotifications(false)}
-                    >
-                      View all notifications
-                    </Link>
-                  </div>
                 </div>
               )}
             </div>
-
-              <div className="ml-3 relative" ref={profileRef}>
-                <div>
-                  <button
-                    type="button"
-                    className="max-w-xs flex items-center text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 hover:bg-blue-50 px-2 py-1 transition-colors duration-150"
-                    id="user-menu-button"
-                    aria-expanded={isProfileOpen}
-                    aria-haspopup="true"
-                    onClick={() => setIsProfileOpen(!isProfileOpen)}
-                  >
-                    <span className="sr-only">Open user menu</span>
-                    <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-medium">
-                      {user ? getInitials(`${user.firstName} ${user.lastName}`) : 'U'}
-                    </div>
-                    <span className="ml-2 text-sm font-medium text-gray-700 hidden md:block">
-                      {user ? `${user.firstName} ${user.lastName}` : 'User'}
-                    </span>
-                    <ChevronDownIcon className="ml-1 h-4 w-4 text-gray-500 hidden md:block" />
-                  </button>
+            <div className="ml-3 relative">
+              <div>
+                <button
+                  type="button"
+                  onClick={() => setIsProfileOpen(!isProfileOpen)}
+                  className="flex items-center text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  aria-labelledby="user-menu-button"
+                  tabIndex={-1}
+                >
+                <span className="sr-only">Open user menu</span>
+                {profileData?.profilePicture ? (
+                  <img 
+                    src={profileData.profilePicture} 
+                    alt="Profile" 
+                    className="h-8 w-8 rounded-full object-cover"
+                    onError={(e) => {
+                      // If profile picture fails to load, hide it and show initials
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = 'none';
+                      const fallback = target.parentElement?.querySelector('.profile-initials-fallback');
+                      if (fallback) fallback.classList.remove('hidden');
+                    }}
+                  />
+                ) : null}
+                <div className={`profile-initials-fallback h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-medium ${
+                  profileData?.profilePicture ? 'hidden' : ''
+                }`}>
+                  {getInitials((profileData?.firstName || user?.firstName || '') + ' ' + (profileData?.lastName || user?.lastName || ''))}
                 </div>
+                <span className="ml-2 text-gray-700 font-medium hidden md:inline">
+                  {profileData?.firstName || user?.firstName || 'User'}
+                </span>
+                <ChevronDownIcon className="ml-1 h-4 w-4 text-gray-500" />
+              </button>
 
-                {isProfileOpen && (
-                  <div
-                    className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-50"
-                    role="menu"
-                    aria-orientation="vertical"
-                    aria-labelledby="user-menu-button"
-                    tabIndex={-1}
-                    onMouseEnter={() => setIsProfileOpen(true)}
-                    onMouseLeave={() => setIsProfileOpen(false)}
-                  >
+              {isProfileOpen && (
+                <div 
+                  className="origin-top-right absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-50"
+                  role="menu"
+                  aria-orientation="vertical"
+                  aria-labelledby="user-menu"
+                  tabIndex={-1}
+                >
+                  <div className="py-1" role="none">
                     <Link
-                    to="/youth/profile"
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors duration-150"
-                    role="menuitem"
-                    tabIndex={-1}
-                    id="user-menu-item-0"
-                    onClick={() => setIsProfileOpen(false)}
-                  >
-                    <div className="flex items-center">
-                      <svg className="h-5 w-5 text-gray-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                      </svg>
-                      Your Profile
-                    </div>
-                  </Link>
-                  <Link
-                    to="/youth/applications"
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors duration-150"
-                    role="menuitem"
-                    tabIndex={-1}
-                    id="user-menu-item-0.5"
-                    onClick={() => setIsProfileOpen(false)}
-                  >
-                    <div className="flex items-center">
-                      <svg className="h-5 w-5 text-gray-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      to="/youth/profile"
+                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      role="menuitem"
+                      tabIndex={-1}
+                      onClick={() => setIsProfileOpen(false)}
+                    >
+                      <UserIcon className="h-5 w-5 text-gray-500 mr-3" />
+                      <span>Your Profile</span>
+                    </Link>
+                    <Link
+                      to="/youth/applications"
+                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      role="menuitem"
+                      tabIndex={-1}
+                      onClick={() => setIsProfileOpen(false)}
+                    >
+                      <svg className="h-5 w-5 text-gray-500 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                       </svg>
-                      My Applications
-                    </div>
-                  </Link>
+                      <span>My Applications</span>
+                    </Link>
+                    <Link
+                      to="/youth/settings"
+                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      role="menuitem"
+                      tabIndex={-1}
+                      onClick={() => setIsProfileOpen(false)}
+                    >
+                      <CogIcon className="h-5 w-5 text-gray-500 mr-3" />
+                      <span>Settings</span>
+                    </Link>
+                    <button
+                      onClick={() => {
+                        logout();
+                        setIsProfileOpen(false);
+                      }}
+                      className="w-full text-left flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      role="menuitem"
+                      tabIndex={-1}
+                    >
+                      <ArrowRightOnRectangleIcon className="h-5 w-5 text-gray-500 mr-3" />
+                      <span>Sign out</span>
+                    </button>
+                  </div>
+                  
                   <Link
                     to="/youth/settings"
                     className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors duration-150"
@@ -309,6 +373,7 @@ const YouthNavbar: React.FC<YouthNavbarProps> = ({ onToggleSidebar }) => {
           </div>
         </div>
       </div>
+    </div>
     </header>
   );
 };

@@ -41,89 +41,54 @@ export function SignupPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (loading) return; // Prevent multiple submissions
     
+    // Reset states
     setError('');
     setSuccess(false);
-    
-    // Validate form
-    if (!formData.firstName.trim() || !formData.lastName.trim()) {
-      setError('Please enter your full name');
-      return;
-    }
-    
-    if (!formData.email) {
-      setError('Email is required');
-      return;
-    }
-    
-    if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      setError('Please enter a valid email address');
-      return;
-    }
-    
-    if (formData.password.length < 8) {
-      setError('Password must be at least 8 characters long');
+    setLoading(true);
+
+    // Basic validation
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match');
+      setLoading(false);
       return;
     }
 
-    if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
-    
     if (!agreedToTerms) {
       setError('You must agree to the terms and conditions');
+      setLoading(false);
       return;
     }
-    
+
     try {
-      setLoading(true);
-      
+      // Call the register function from auth context
       const result = await register({
-        email: formData.email.trim(),
-        password: formData.password,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        phone: formData.phone,
         role: formData.role,
-        firstName: formData.firstName.trim(),
-        lastName: formData.lastName.trim(),
-        phone: formData.phone.trim(),
+        password: formData.password
       });
-      
-      if (result?.success) {
+
+      if (result.success) {
+        // Show success message
         setSuccess(true);
-        toast.success('Registration successful! Please check your email to verify your account.');
+        toast.success('Account created successfully! Please log in.');
         
-        // Reset form
-        setFormData({
-          firstName: '',
-          lastName: '',
-          email: '',
-          phone: '',
-          role: 'youth',
-          password: '',
-          confirmPassword: ''
-        });
-        setAgreedToTerms(false);
-        
-        // Redirect to login after a delay
+        // After 2 seconds, redirect to login with prefilled email
         setTimeout(() => {
-          navigate('/login', { 
-            state: { 
-              email: formData.email,
-              registrationSuccess: true 
-            } 
-          });
-        }, 1000);
+          navigate(`/login?email=${encodeURIComponent(formData.email)}`);
+        }, 2000);
       } else {
-        const errorMsg = result?.message || 'Registration failed. Please try again.';
-        setError(errorMsg);
-        toast.error(errorMsg);
+        // Handle registration failure
+        setError(result.message || 'Failed to create account, Try again!');
       }
-    } catch (err) {
-      console.error('Registration error:', err);
-      const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred. Please try again.';
+      
+    } catch (err: any) {
+      console.error('Signup error:', err);
+      const errorMessage = err.response?.data?.message || err.message || 'Failed to create account';
       setError(errorMessage);
-      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -153,15 +118,23 @@ export function SignupPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <NavBar />
+      {loading && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-xl">
+            <LoadingSpinner size="lg" className="mx-auto mb-4" />
+            <p className="text-gray-700">Creating your account, please wait...</p>
+          </div>
+        </div>
+      )}
       <div className={`flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 ${primaryGradient} bg-cover bg-center`}>
         <div className="w-full max-w-md">
           <Card className="w-full bg-white/90 backdrop-blur-sm shadow-xl overflow-hidden">
             <div className="px-8 py-2 bg-gradient-to-r from-blue-600 to-purple-600">
-              <h1 className="text-2xl font-bold text-white text-center py-2">DYPSE</h1>
+              <h1 className="text-xl font-bold text-white text-center py-2">DYNAMIC YOUTH PROFILING SYSTEM</h1>
             </div>
             <CardHeader className="space-y-1 text-center pb-2">
-              <CardDescription className="text-gray-600">
-                For every youth, a path. For every path, a future
+              <CardDescription className="text-gray-600 font-semibold">
+                For Every Youth, a Path. For Every Path, a Future
               </CardDescription>
             </CardHeader>
             
@@ -221,7 +194,7 @@ export function SignupPage() {
                             required
                             value={formData.firstName}
                             onChange={handleChange}
-                            className={`pl-10 w-full ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
+                            className={`pl-10 w-full  border-gray-400 ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
                             placeholder="First name"
                             disabled={loading}
                           />
@@ -243,7 +216,7 @@ export function SignupPage() {
                             required
                             value={formData.lastName}
                             onChange={handleChange}
-                            className={`pl-10 w-full ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
+                            className={`pl-10 w-full  border-gray-400 ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
                             placeholder="Last name"
                             disabled={loading}
                           />
@@ -268,7 +241,7 @@ export function SignupPage() {
                             required
                             value={formData.email}
                             onChange={handleChange}
-                            className={`pl-10 w-full border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 rounded-md shadow-sm ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
+                            className={`pl-10 w-full border-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 rounded-md shadow-sm ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
                             placeholder="Enter your email"
                             disabled={loading}
                           />
@@ -290,7 +263,7 @@ export function SignupPage() {
                             required
                             value={formData.phone}
                             onChange={handleChange}
-                            className={`pl-10 w-full border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 rounded-md shadow-sm ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
+                            className={`pl-10 w-full border-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 rounded-md shadow-sm ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
                             placeholder="Enter your phone number"
                             disabled={loading}
                           />
@@ -309,7 +282,7 @@ export function SignupPage() {
                         required
                         value={formData.role}
                         onChange={handleChange}
-                        className="mt-1 block w-full pl-3 pr-10 py-2.5 text-base border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md shadow-sm"
+                        className="mt-1 block w-full pl-3 pr-10 py-2.5 text-base border border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md shadow-sm"
                         disabled={loading}
                       >
                         <option value="youth">Job Seeker / Youth</option>
@@ -329,7 +302,7 @@ export function SignupPage() {
                           required
                           value={formData.password}
                           onChange={handleChange}
-                          className="pl-10 pr-10 w-full border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 rounded-md shadow-sm"
+                          className="pl-10 pr-10 w-full border-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 rounded-md shadow-sm"
                           placeholder="Create a password (min 8 characters)"
                           disabled={loading}
                         />
@@ -362,7 +335,7 @@ export function SignupPage() {
                           required
                           value={formData.confirmPassword}
                           onChange={handleChange}
-                          className="pl-10 pr-10 w-full border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 rounded-md shadow-sm"
+                          className="pl-10 pr-10 w-full border-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 rounded-md shadow-sm"
                           placeholder="Confirm your password"
                           disabled={loading}
                         />
@@ -411,7 +384,7 @@ export function SignupPage() {
 
                     <Button
                       type="submit"
-                      className={`w-full justify-center ${loading ? 'opacity-75' : ''}`}
+                      className={`w-full justify-center  bg-blue-500 hover:bg-blue-400 ${loading ? 'opacity-75' : ''}`}
                       disabled={loading}
                     >
                       {loading ? (
@@ -437,7 +410,6 @@ export function SignupPage() {
           </Card>
         </div>
       </div>
-      {/* Chatbot component removed from here - should be placed in a layout component if needed */}
     </div>
   );
 }

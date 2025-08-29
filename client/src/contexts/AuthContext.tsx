@@ -14,7 +14,28 @@ export interface User {
   isEmailVerified?: boolean;
   companyName?: string;
   contactName?: string;
-  profile?: any; 
+  profile?: {
+    firstName?: string;
+    lastName?: string;
+    phoneNumber?: string;
+    profilePicture?: string;
+    profileCompletion?: number;
+    bio?: string;
+    address?: string;
+    city?: string;
+    district?: string;
+    country?: string;
+    postalCode?: string;
+    jobStatus?: string;
+    skills?: any[];
+    education?: any[];
+    experience?: any[];
+    cvUrl?: string;
+    updatedAt?: string;
+    [key: string]: any;
+  };
+  applications?: any[];
+  interviews?: any[];
 }
 
 interface AuthContextType {
@@ -30,6 +51,7 @@ interface AuthContextType {
     phone?: string;
   }) => Promise<{ success: boolean; message?: string }>;
   logout: () => void;
+  refreshUser: () => Promise<void>;
   isAuthenticated: boolean;
   isAdmin: boolean;
   isEmployer: boolean;
@@ -45,84 +67,131 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     const loadUser = async () => {
+      // Only attempt to load user if we have a token
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setLoading(false);
+        return;
+      }
+
       try {
-        const token = localStorage.getItem('token');
-        if (token) {
-          const userData = await authAPI.getCurrentUser();
-          // Ensure all required fields are present
-          const user: User = {
-            id: userData.id,
-            email: userData.email,
-            firstName: userData.firstName,
-            lastName: userData.lastName,
-            phone: userData.phone,
-            role: userData.role,
-            isEmailVerified: userData.isEmailVerified,
-            companyName: (userData as any).companyName,
-            contactName: (userData as any).contactName,
-            profile: userData.profile
-          };
-          setUser(user);
+        const userData = await authAPI.getCurrentUser();
+        
+        // Validate required fields
+        if (!userData?.id || !userData.email || !userData.role) {
+          throw new Error('Invalid user data received from server');
         }
+
+        // Ensure all required fields are present with proper types
+        const user: User = {
+          id: userData.id,
+          email: userData.email,
+          role: userData.role,
+          firstName: userData.firstName || '',
+          lastName: userData.lastName || '',
+          phone: userData.phone || '',
+          isEmailVerified: Boolean(userData.isEmailVerified),
+          companyName: (userData as any).companyName,
+          contactName: (userData as any).contactName,
+          profile: userData.profile || {}
+        };
+        
+        setUser(user);
       } catch (error) {
-        console.error('Failed to load user', error);
+        console.error('Failed to load user:', error);
+        // Clear invalid token
         localStorage.removeItem('token');
+        // Don't show error toast here to prevent flash on page load
       } finally {
         setLoading(false);
       }
     };
 
-    loadUser();
+    // Add a small delay to prevent flash of loading state
+    const timer = setTimeout(() => {
+      loadUser();
+    }, 100);
+
+    return () => clearTimeout(timer);
   }, []);
 
   const login = async (email: string, password: string): Promise<{ success: boolean; message?: string }> => {
-    setLoading(true);
+    // Don't set global loading state during login - let the component handle it
+    // setLoading(true);
     
-    // Validate input
-    if (!email || !password) {
-      setLoading(false);
-      return { success: false, message: 'Please enter both email and password' };
-    }
-    
-    // Network guard
-    if (!navigator.onLine) {
-      setLoading(false);
-      return { success: false, message: 'No internet connection. Please check your network.' };
-    }
-
     try {
-      const data = await authAPI.login({ email, password });
-      if (!data?.token) {
-        setLoading(false);
-        return { success: false, message: 'Authentication failed. Please try again.' };
+      // Basic validation
+      if (!email?.trim()) {
+        throw new Error('Please enter your email address');
+      }
+      
+      if (!password) {
+        throw new Error('Please enter your password');
+      }
+      
+      // Email format validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        throw new Error('Please enter a valid email address');
+      }
+      
+      // Network check
+      if (!navigator.onLine) {
+        throw new Error('No internet connection. Please check your network and try again.');
       }
 
-      // Get user data after successful login
+      // Attempt login - this will throw if login fails
+      await authAPI.login({ email, password });
+      
+      // If we get here, login was successful - get the user data
       const userData = await authAPI.getCurrentUser();
+      
+      // Validate user data
+      if (!userData?.id || !userData.email || !userData.role) {
+        throw new Error('Invalid user data received from server');
+      }
+      
       const user: User = {
         id: userData.id,
         email: userData.email,
-        firstName: userData.firstName,
-        lastName: userData.lastName,
-        phone: userData.phone,
+        firstName: userData.firstName || '',
+        lastName: userData.lastName || '',
+        phone: userData.phone || '',
         role: userData.role,
-        isEmailVerified: userData.isEmailVerified || false,
+        isEmailVerified: Boolean(userData.isEmailVerified),
         companyName: (userData as any).companyName,
         contactName: (userData as any).contactName,
-        profile: userData.profile
+        profile: userData.profile || {}
       };
 
+      // Update state
       setUser(user);
-      toast.success('Login successful!');
-
-      const redirectPath = {
-        'admin': '/admin',
-        'employer': '/employer/dashboard',
-        'youth': '/youth/dashboard',
-        'verifier': '/verifier/dashboard'
-      }[user.role] || '/dashboard';
-      navigate(redirectPath);
-      setLoading(false);
+      
+        // Show success message after a small delay to prevent flash
+        setTimeout(() => {
+          toast.success('Login successful!');
+          
+          // Check for redirect parameter in URL
+          const urlParams = new URLSearchParams(window.location.search);
+          const redirectParam = urlParams.get('redirect');
+          
+          let redirectPath;
+          if (redirectParam) {
+            // Use the redirect parameter from URL
+            redirectPath = decodeURIComponent(redirectParam);
+          } else {
+            // Default redirect based on role
+            redirectPath = {
+              'admin': '/admin/dashboard',
+              'employer': '/employer/dashboard',
+              'youth': '/youth/dashboard',
+              'verifier': '/verifier/dashboard'
+            }[user.role] || '/dashboard';
+          }
+          
+          navigate(redirectPath, { replace: true });
+        }, 100);
+      
       return { success: true };
 
     } catch (error: any) {
@@ -164,7 +233,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     phone?: string;
   }): Promise<{ success: boolean; message?: string }> => {
     try {
-      setLoading(true);
+      // Don't set global loading state during registration - let the component handle it
+      // setLoading(true);
       
       // Validate input
       if (!userData.email || !userData.password) {
@@ -211,20 +281,65 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return { success: false, message };
       
     } finally {
-      setLoading(false);
+      // Don't reset global loading state
+      // setLoading(false);
     }
   };
 
-  const authValue = {
+  const refreshUser = async (): Promise<void> => {
+    try {
+      const userData = await authAPI.getCurrentUser();
+      
+      if (userData?.id && userData.email && userData.role) {
+        const user: User = {
+          id: userData.id,
+          email: userData.email,
+          role: userData.role,
+          firstName: userData.firstName || '',
+          lastName: userData.lastName || '',
+          phone: userData.phone || '',
+          isEmailVerified: Boolean(userData.isEmailVerified),
+          companyName: (userData as any).companyName,
+          contactName: (userData as any).contactName,
+          profile: userData.profile || {}
+        };
+        setUser(user);
+      }
+    } catch (error) {
+      console.error('Failed to refresh user:', error);
+      // Don't clear user on refresh error - just log it
+    }
+  };
+
+  const logout = (): void => {
+    try {
+      authAPI.logout();
+      setUser(null);
+      // Clear any state that might be user-specific
+      localStorage.removeItem('token');
+      // Redirect to login with a state to show logout message
+      navigate('/login', { 
+        state: { 
+          message: 'You have been successfully logged out.',
+          messageType: 'success'
+        } 
+      });
+    } catch (error) {
+      console.error('Error during logout:', error);
+      // Still clear user state even if logout API fails
+      setUser(null);
+      localStorage.removeItem('token');
+      navigate('/login');
+    }
+  };
+
+  const authValue: AuthContextType = {
     user,
     loading,
     login,
     register,
-    logout: () => {
-      authAPI.logout();
-      setUser(null);
-      navigate('/login');
-    },
+    logout,
+    refreshUser,
     isAuthenticated: !!user,
     isAdmin: user?.role === 'admin',
     isEmployer: user?.role === 'employer',
@@ -237,6 +352,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     </AuthContext.Provider>
   );
 };
+
+export default AuthProvider;
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -251,28 +368,27 @@ export const ProtectedRoute = ({
   children,
   roles,
 }: {
-  children: ReactNode | ((props: { user: User }) => ReactNode);
-  roles?: ('admin' | 'employer' | 'youth')[];
+  children: React.ReactNode | ((props: { user: User }) => React.ReactNode);
+  roles?: ('admin' | 'employer' | 'youth' | 'verifier')[];
 }) => {
   const { user, loading } = useAuth();
   const location = useLocation();
 
   if (loading) {
-    return <div>Loading...</div>; // Or a loading spinner
+    return <div>Loading...</div>;
   }
 
   if (!user) {
-    // Redirect to login if not authenticated
+    // Redirect to login page with the current location to return to after login
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
   // Check if user has required role
-  if (roles && !roles.includes(user.role as any)) {
-    // Redirect to unauthorized or home page
+  if (roles && roles.length > 0 && !roles.includes(user.role)) {
     return <Navigate to="/unauthorized" replace />;
   }
 
-  // If children is a function, pass the user to it
+  // If children is a function, pass the user prop
   if (typeof children === 'function') {
     return <>{children({ user })}</>;
   }

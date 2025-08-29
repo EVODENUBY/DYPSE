@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
+import { youthApi } from '../../lib/api';
 import { 
   FiSearch,
   FiEye, 
@@ -19,37 +21,47 @@ import {
   FiX
 } from 'react-icons/fi';
 
-// Sample data - in a real app, this would come from an API
-const sampleYouths = [
-  {
-    id: 1,
-    profilePicture: 'https://randomuser.me/api/portraits/men/1.jpg',
-    firstName: 'Jean',
-    lastName: 'Niyonshuti',
-    location: 'Kigali',
-    dob: '1995-05-15',
-    education: 'Bachelor in Computer Science',
-    skills: ['JavaScript', 'React', 'Node.js'],
-    jobStatus: 'Employed',
-    updatedAt: '2023-06-15',
-    phone: '+250788123456',
-    isVerified: true
-  },
-  ...Array(10).fill(0).map((_, i) => ({
-    id: i + 2,
-    profilePicture: `https://randomuser.me/api/portraits/${i % 2 === 0 ? 'men' : 'women'}/${i + 10}.jpg`,
-    firstName: ['Eric', 'Alice', 'David', 'Grace', 'Samuel', 'Olivia', 'James', 'Sophia', 'Daniel', 'Emma'][i % 10],
-    lastName: ['Uwimana', 'Uwamahoro', 'Niyongabo', 'Mukamana', 'Hakizimana', 'Mukamurenzi', 'Niyonshuti', 'Uwineza', 'Ndahiro', 'Uwamahoro'][i % 10],
-    location: ['Kigali', 'Musanze', 'Rubavu', 'Huye', 'Nyagatare', 'Rusizi', 'Karongi', 'Nyamagabe', 'Ngoma', 'Kayonza'][i % 10],
-    dob: `199${i % 10}-${(i % 12) + 1 < 10 ? '0' + ((i % 12) + 1) : (i % 12) + 1}-${(i % 28) + 1 < 10 ? '0' + ((i % 28) + 1) : (i % 28) + 1}`,
-    education: ['High School', 'Bachelor', 'Masters', 'Diploma', 'Certificate', 'PhD', 'High School', 'Bachelor', 'Masters', 'Diploma'][i % 10],
-    skills: [['Carpentry'], ['Tailoring'], ['Masonry'], ['Plumbing'], ['Electrical'], ['Driving'], ['Cooking'], ['Hair Dressing'], ['ICT'], ['Farming']][i % 10],
-    jobStatus: ['Employed', 'Unemployed', 'Self-Employed', 'Employed', 'Unemployed', 'Self-Employed', 'Employed', 'Unemployed', 'Self-Employed', 'Employed'][i % 10],
-    updatedAt: `2023-${(i % 12) + 1 < 10 ? '0' + ((i % 12) + 1) : (i % 12) + 1}-${(i % 28) + 1 < 10 ? '0' + ((i % 28) + 1) : (i % 28) + 1}`,
-    phone: `+25078${Math.floor(1000000 + Math.random() * 9000000)}`,
-    isVerified: Math.random() > 0.5
-  }))
-];
+// Interface for Youth Profile
+export interface YouthProfile {
+  _id: string;
+  id?: string; // Alias for _id for compatibility
+  profilePicture?: string;
+  firstName: string;
+  lastName: string;
+  location: string;
+  dob: string | Date | null;
+  education?: string;
+  skills: string[];
+  jobStatus: 'Employed' | 'Unemployed' | 'Self-Employed' | 'unemployed' | 'employed' | 'self_employed';
+  updatedAt: string | Date;
+  phone: string;
+  email?: string;
+  isVerified: boolean;
+  district?: string;
+  city?: string;
+  country?: string;
+  bio?: string;
+  resume?: string;
+  cvUrl?: string;
+  profileCompletion?: number;
+  experience?: Array<{
+    title: string;
+    company: string;
+    location: string;
+    startDate: Date;
+    endDate?: Date;
+    isCurrent: boolean;
+    description?: string;
+  }>;
+  educationHistory?: Array<{
+    institution: string;
+    degree: string;
+    fieldOfStudy: string;
+    startDate: Date;
+    endDate?: Date;
+    isCurrent: boolean;
+  }>;
+}
 
 const districtsOfRwanda = [
   'All Locations', 'Kigali City', 'Bugesera', 'Gatsibo', 'Kayonza', 'Kirehe', 'Ngoma', 'Nyagatare', 'Rwamagana',
@@ -58,11 +70,28 @@ const districtsOfRwanda = [
 ];
 
 interface ViewYouthModalProps {
-  youth: any;
+  youth: YouthProfile | null;
   onClose: () => void;
-  onToggleVerification: (id: number) => void;
-  onEdit: (youth: any) => void;
+  onToggleVerification: (id: string) => Promise<void>;
+  onEdit: (youth: YouthProfile) => void;
 }
+
+const formatDate = (dateInput: string | Date | null | undefined): string => {
+  if (!dateInput) return 'N/A';
+  try {
+    const date = dateInput instanceof Date ? dateInput : new Date(dateInput);
+    return isNaN(date.getTime()) 
+      ? 'N/A' 
+      : date.toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+        });
+  } catch (error) {
+    console.error('Error formatting date:', error);
+    return 'N/A';
+  }
+};
 
 const ViewYouthModal: React.FC<ViewYouthModalProps> = ({ 
   youth, 
@@ -71,6 +100,22 @@ const ViewYouthModal: React.FC<ViewYouthModalProps> = ({
   onEdit 
 }) => {
   if (!youth) return null;
+
+  const handleToggleVerification = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await onToggleVerification(youth._id);
+      toast.success(`User verification ${youth.isVerified ? 'removed' : 'added'} successfully`);
+    } catch (error) {
+      console.error('Verification error:', error);
+      toast.error('Failed to update verification status');
+    }
+  };
+
+  const handleEditClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onEdit(youth);
+  };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -92,11 +137,31 @@ const ViewYouthModal: React.FC<ViewYouthModalProps> = ({
             {/* Left Column - Profile Picture and Basic Info */}
             <div className="md:col-span-1">
               <div className="flex flex-col items-center">
-                <img
-                  className="h-40 w-40 rounded-full object-cover mb-4"
-                  src={youth.profilePicture}
-                  alt={`${youth.firstName} ${youth.lastName}`}
-                />
+                <div className="h-24 w-24 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden mb-4">
+                  {youth.profilePicture ? (
+                    <img
+                      className="h-full w-full object-cover"
+                      src={youth.profilePicture}
+                      alt={`${youth.firstName} ${youth.lastName}`}
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.onerror = null;
+                        target.style.display = 'none';
+                        const parent = target.parentElement;
+                        if (parent) {
+                          const fallback = document.createElement('div');
+                          fallback.className = 'h-full w-full flex items-center justify-center bg-gray-200 text-gray-500 text-2xl';
+                          fallback.textContent = (youth.firstName?.[0] + (youth.lastName?.[0] || '')).toUpperCase() || '';
+                          parent.appendChild(fallback);
+                        }
+                      }}
+                    />
+                  ) : (
+                    <div className="h-full w-full flex items-center justify-center bg-gray-200 text-gray-500 text-2xl">
+                      {(youth.firstName?.[0] + (youth.lastName?.[0] || '')).toUpperCase() || ''}
+                    </div>
+                  )}
+                </div>
                 <div className="flex items-center space-x-2 mb-2">
                   <span className={`px-3 py-1 rounded-full text-sm font-medium ${
                     youth.isVerified 
@@ -123,7 +188,7 @@ const ViewYouthModal: React.FC<ViewYouthModalProps> = ({
                   </div>
                   <div className="flex items-center text-gray-600">
                     <FiCalendar className="mr-2" />
-                    <span>DOB: {new Date(youth.dob).toLocaleDateString()}</span>
+                    <span>DOB: {youth.dob ? formatDate(youth.dob) : 'N/A'}</span>
                   </div>
                   <div className="flex items-center text-gray-600">
                     <FiPhone className="mr-2" />
@@ -174,9 +239,7 @@ const ViewYouthModal: React.FC<ViewYouthModalProps> = ({
                     </div>
                     <div>
                       <p className="text-sm text-gray-500">Last Updated</p>
-                      <p className="font-medium">
-                        {new Date(youth.updatedAt).toLocaleDateString()}
-                      </p>
+                      <p className="font-medium">{formatDate(youth.updatedAt)}</p>
                     </div>
                   </div>
                 </div>
@@ -197,10 +260,7 @@ const ViewYouthModal: React.FC<ViewYouthModalProps> = ({
                       </p>
                     </div>
                     <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onToggleVerification(youth.id);
-                      }}
+                      onClick={handleToggleVerification}
                       className={`px-4 py-2 rounded-md text-sm font-medium ${
                         youth.isVerified 
                           ? 'bg-red-100 text-red-700 hover:bg-red-200' 
@@ -223,11 +283,7 @@ const ViewYouthModal: React.FC<ViewYouthModalProps> = ({
               Close
             </button>
             <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onEdit(youth);
-                onClose();
-              }}
+              onClick={handleEditClick}
               className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
             >
               Edit Profile
@@ -248,24 +304,112 @@ const YouthProfilesPage: React.FC = () => {
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const [showLocationDropdown, setShowLocationDropdown] = useState(false);
   const [showVerificationDropdown, setShowVerificationDropdown] = useState(false);
-  const [selectedYouth, setSelectedYouth] = useState<any>(null);
-  const [youths, setYouths] = useState([...sampleYouths]);
+  const [selectedYouth, setSelectedYouth] = useState<YouthProfile | null>(null);
+  const [youths, setYouths] = useState<YouthProfile[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   
   const itemsPerPage = 8;
   
+  // Fetch youth profiles from the API
+  const fetchYouths = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await youthApi.getAllYouths();
+      if (response.success) {
+        // The backend now returns the data directly in response.data
+        setYouths(response.data || []);
+      } else {
+        const errorMsg = response.message || 'Failed to load youth profiles';
+        setError(errorMsg);
+        toast.error(errorMsg);
+      }
+    } catch (err) {
+      console.error('Error fetching youth profiles:', err);
+      const errorMessage = err instanceof Error ? err.message : 'An error occurred';
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Load data on component mount
+  useEffect(() => {
+    fetchYouths();
+  }, []);
+
   // Toggle verification status
-  const toggleVerification = (id: number) => {
-    const updatedYouths = youths.map(youth => 
-      youth.id === id ? { ...youth, isVerified: !youth.isVerified } : youth
-    );
-    setYouths(updatedYouths);
-    
-    // Update selectedYouth if it's the one being toggled
-    if (selectedYouth && selectedYouth.id === id) {
-      setSelectedYouth({
-        ...selectedYouth,
-        isVerified: !selectedYouth.isVerified
-      });
+  const toggleVerification = async (id: string) => {
+    try {
+      const youth = youths.find(y => y._id === id);
+      if (!youth) {
+        toast.error('Youth profile not found');
+        return;
+      }
+      
+      const response = await youthApi.updateVerification(id, !youth.isVerified);
+      
+      if (response.success && response.data?.user) {
+        const updatedUser = response.data.user;
+        
+        // Update the specific youth's data including skills and verification status
+        setYouths(prevYouths => 
+          prevYouths.map(y => {
+            if (y._id === id) {
+              // Construct profile picture URL if needed
+              const profilePicture = updatedUser.profilePicture 
+                ? updatedUser.profilePicture.startsWith('http')
+                  ? updatedUser.profilePicture
+                  : `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api'}${updatedUser.profilePicture.startsWith('/') ? '' : '/'}${updatedUser.profilePicture}`
+                : y.profilePicture;
+              
+              return {
+                ...y,
+                isVerified: updatedUser.isVerified,
+                skills: Array.isArray(updatedUser.skills) ? updatedUser.skills : (y.skills || []),
+                profilePicture,
+                // Update other fields if needed
+                ...(updatedUser.firstName && { firstName: updatedUser.firstName }),
+                ...(updatedUser.lastName && { lastName: updatedUser.lastName }),
+                ...(updatedUser.education && { education: updatedUser.education }),
+                ...(updatedUser.jobStatus && { jobStatus: updatedUser.jobStatus })
+              };
+            }
+            return y;
+          })
+        );
+        
+        // Update selectedYouth if it's currently open
+        if (selectedYouth && selectedYouth._id === id) {
+          setSelectedYouth({
+            ...selectedYouth,
+            isVerified: updatedUser.isVerified,
+            skills: Array.isArray(updatedUser.skills) ? updatedUser.skills : (selectedYouth.skills || []),
+            ...(updatedUser.firstName && { firstName: updatedUser.firstName }),
+            ...(updatedUser.lastName && { lastName: updatedUser.lastName }),
+            ...(updatedUser.education && { education: updatedUser.education }),
+            ...(updatedUser.jobStatus && { jobStatus: updatedUser.jobStatus as YouthProfile['jobStatus'] })
+          });
+        }
+        
+        toast.success(`Profile ${!youth.isVerified ? 'verified' : 'unverified'} successfully`);
+        
+        toast.success(`Verification ${!youth.isVerified ? 'added' : 'removed'} successfully`);
+      } else {
+        throw new Error('Failed to refresh youth profiles');
+      }
+    } catch (error) {
+      console.error('Error toggling verification:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update verification status';
+      toast.error(errorMessage);
+      
+      // Revert the UI state on error
+      const updatedYouths = youths.map(y => 
+        y._id === id ? { ...y, isVerified: !y.isVerified } : y
+      );
+      setYouths(updatedYouths);
     }
   };
   
@@ -288,12 +432,35 @@ const YouthProfilesPage: React.FC = () => {
     // navigate(`/admin/youth-profiles/edit/${youth.id}`);
   };
 
+  // Handle delete action
+  const handleDeleteYouth = async (id: string) => {
+    if (window.confirm('Are you sure you want to delete this youth profile? This action cannot be undone.')) {
+      try {
+        await youthApi.deleteYouth(id);
+        
+        // Update local state
+        const updatedYouths = youths.filter(youth => youth._id !== id);
+        setYouths(updatedYouths);
+        
+        // Close modal if the deleted youth is currently being viewed
+        if (selectedYouth && selectedYouth._id === id) {
+          setSelectedYouth(null);
+        }
+        
+        toast.success('Youth profile deleted successfully');
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to delete profile';
+        toast.error(errorMessage);
+      }
+    }
+  };
+
   // Filter youths based on search and filters
   const filteredYouths = youths.filter(youth => {
     const matchesSearch = searchTerm === '' || 
-      youth.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      youth.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      youth.skills.some(skill => skill.toLowerCase().includes(searchTerm.toLowerCase()));
+      (youth.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      youth.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      youth.skills?.some((skill: string) => skill.toLowerCase().includes(searchTerm.toLowerCase())));
       
     const matchesStatus = statusFilter === 'All Status' || youth.jobStatus === statusFilter;
     const matchesLocation = locationFilter === 'All Locations' || youth.location === locationFilter;
@@ -312,6 +479,50 @@ const YouthProfilesPage: React.FC = () => {
   const totalPages = Math.ceil(filteredYouths.length / itemsPerPage);
 
   const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading youth profiles...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="text-center">
+          <div className="text-red-500 text-4xl mb-4">⚠️</div>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Error Loading Data</h3>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button
+            onClick={fetchYouths}
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Show empty state
+  if (youths.length === 0) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="text-center">
+          <div className="text-gray-400 text-4xl mb-4">👥</div>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">No Youth Profiles Found</h3>
+          <p className="text-gray-600">There are currently no youth profiles in the system.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6">
@@ -457,15 +668,40 @@ const YouthProfilesPage: React.FC = () => {
             <tbody className="bg-white divide-y divide-gray-200">
               {currentYouths.length > 0 ? (
                 currentYouths.map((youth) => (
-                  <tr key={youth.id} className="hover:bg-gray-50">
+                  <tr key={youth._id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
-                        <div className="flex-shrink-0 h-10 w-10">
-                          <img className="h-10 w-10 rounded-full" src={youth.profilePicture} alt={`${youth.firstName} ${youth.lastName}`} />
+                        <div className="flex-shrink-0 h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
+                          {youth.profilePicture ? (
+                            <img 
+                              className="h-full w-full object-cover"
+                              src={youth.profilePicture.startsWith('http') 
+                                ? youth.profilePicture 
+                                : `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api'}${youth.profilePicture.startsWith('/') ? '' : '/'}${youth.profilePicture}`
+                              } 
+                              alt={`${youth.firstName} ${youth.lastName}`}
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.onerror = null;
+                                target.style.display = 'none';
+                                const parent = target.parentElement;
+                                if (parent) {
+                                  const fallback = document.createElement('div');
+                                  fallback.className = 'h-full w-full flex items-center justify-center bg-gray-200 text-gray-500';
+                                  fallback.textContent = youth.firstName?.[0]?.toUpperCase() || '';
+                                  parent.appendChild(fallback);
+                                }
+                              }}
+                            />
+                          ) : (
+                            <div className="h-full w-full flex items-center justify-center bg-gray-200 text-gray-500">
+                              {youth.firstName?.[0]?.toUpperCase() || ''}
+                            </div>
+                          )}
                         </div>
                         <div className="ml-4">
                           <div className="text-sm font-medium text-gray-900">{youth.firstName} {youth.lastName}</div>
-                          <div className="text-xs text-gray-500">{youth.dob}</div>
+                          <div className="text-xs text-gray-500">{youth.dob ? formatDate(youth.dob) : 'N/A'}</div>
                         </div>
                       </div>
                     </td>
@@ -498,7 +734,7 @@ const YouthProfilesPage: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <button
-                        onClick={() => toggleVerification(youth.id)}
+                        onClick={() => toggleVerification(youth._id)}
                         className={`px-2 py-1 text-xs rounded-full flex items-center ${
                           youth.isVerified 
                             ? 'bg-green-100 text-green-800' 
@@ -518,10 +754,10 @@ const YouthProfilesPage: React.FC = () => {
                       </button>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {youth.updatedAt}
+                      {formatDate(youth.updatedAt)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="flex items-center justify-end space-x-2">
+                      <div className="flex items-center justify-end space-x-3">
                         <button
                           title="View"
                           className="text-blue-600 hover:text-blue-900"
@@ -532,22 +768,26 @@ const YouthProfilesPage: React.FC = () => {
                         <button
                           title="Edit"
                           className="text-yellow-600 hover:text-yellow-900"
+                          onClick={() => handleEditYouth(youth)}
                         >
                           <FiEdit className="h-5 w-5" />
                         </button>
                         <button
                           title="Delete"
                           className="text-red-600 hover:text-red-900"
+                          onClick={() => handleDeleteYouth(youth._id)}
                         >
                           <FiTrash2 className="h-5 w-5" />
                         </button>
-                        <a
-                          href={`tel:${youth.phone}`}
-                          title="Call"
-                          className="text-green-600 hover:text-green-900"
-                        >
-                          <FiPhone className="h-5 w-5" />
-                        </a>
+                        {youth.phone && (
+                          <a
+                            href={`tel:${youth.phone}`}
+                            title={`Call ${youth.phone}`}
+                            className="text-green-600 hover:text-green-900"
+                          >
+                            <FiPhone className="h-5 w-5" />
+                          </a>
+                        )}
                       </div>
                     </td>
                   </tr>

@@ -4,6 +4,7 @@ import {
   MapPinIcon, DocumentTextIcon, PencilIcon,
   BriefcaseIcon, AcademicCapIcon, CheckCircleIcon
 } from '@heroicons/react/24/outline';
+import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import CircularProgress from '../../components/CircularProgress';
 import ProfileCard from '../../components/ProfileCard';
 import InfoItem from '../../components/InfoItem';
@@ -12,8 +13,89 @@ import LocationModal from '../../components/modals/LocationModal';
 import SkillsModal from '../../components/modals/SkillsModal';
 import ExperienceModal from '../../components/modals/ExperienceModal';
 import EducationModal from '../../components/modals/EducationModal';
+import ProfileInsights from '../../components/ProfileInsights';
 import { useAuth } from '@/contexts/AuthContext';
 import { profileAPI } from '@/lib/profileApi';
+import { authAPI } from '@/lib/api';
+
+// Authenticated Image Component
+const AuthenticatedImage = ({ src, alt, className, fallbackSrc }: { src: string | null, alt: string, className: string, fallbackSrc?: string }) => {
+  const [imageSrc, setImageSrc] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    if (!src) {
+      setImageSrc(fallbackSrc || null);
+      setLoading(false);
+      return;
+    }
+
+    const loadAuthenticatedImage = async () => {
+      try {
+        setLoading(true);
+        setError(false);
+        
+        // If it's not an upload path, load directly
+        if (!src.includes('/uploads/')) {
+          setImageSrc(src);
+          setLoading(false);
+          return;
+        }
+
+        const token = localStorage.getItem('token');
+        const response = await fetch(src, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          }
+        });
+
+        if (response.ok) {
+          const blob = await response.blob();
+          const objectUrl = URL.createObjectURL(blob);
+          setImageSrc(objectUrl);
+        } else {
+          console.error('Failed to load authenticated image:', response.statusText);
+          setImageSrc(fallbackSrc || null);
+          setError(true);
+        }
+      } catch (error) {
+        console.error('Error loading authenticated image:', error);
+        setImageSrc(fallbackSrc || null);
+        setError(true);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadAuthenticatedImage();
+
+    // Cleanup function to revoke object URL
+    return () => {
+      if (imageSrc && imageSrc.startsWith('blob:')) {
+        URL.revokeObjectURL(imageSrc);
+      }
+    };
+  }, [src, fallbackSrc]);
+
+  if (loading) {
+    return (
+      <div className={`${className} bg-gray-200 animate-pulse flex items-center justify-center`}>
+        <div className="text-gray-400 text-xs">Loading...</div>
+      </div>
+    );
+  }
+
+  if (error || !imageSrc) {
+    return (
+      <div className={`${className} bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white font-bold text-2xl`}>
+        {alt.split(' ').map(name => name[0]).join('').toUpperCase()}
+      </div>
+    );
+  }
+
+  return <img className={className} src={imageSrc} alt={alt} />;
+};
 
 // Types
 interface Experience {
@@ -69,35 +151,6 @@ interface LocationData{
 };
 
 
-const calculateProfileCompletion = (user: UserProfile): number => {
-  const totalFields = 9; // Total number of fields we're checking
-  let completedFields = 0;
-
-  // Basic info
-  if (user.firstName && user.lastName) completedFields++;
-  if (user.email) completedFields++;
-  if (user.phone) completedFields++;
-  
-  // Location
-  if (user.location && Object.values(user.location).some(Boolean)) completedFields++;
-  
-  // Bio
-  if (user.bio) completedFields++;
-  
-  // Skills
-  if (user.skills && user.skills.length > 0) completedFields++;
-  
-  // Experience
-  if (user.experience && user.experience.length > 0) completedFields++;
-  
-  // Education
-  if (user.education && user.education.length > 0) completedFields++;
-  
-  // Profile picture
-  if (user.profilePicture) completedFields++;
-
-  return Math.round((completedFields / totalFields) * 100);
-};
 
 const ProfilePage = () => {
   const [isPersonalInfoModalOpen, setIsPersonalInfoModalOpen] = useState(false);
@@ -109,8 +162,9 @@ const ProfilePage = () => {
   const [isEducationModalOpen, setIsEducationModalOpen] = useState(false);
   const [editingEducation, setEditingEducation] = useState<Education | null>(null);
 
-  const { user: authUser } = useAuth();
+  const { user: authUser, loading: authLoading } = useAuth();
   const [user, setUser] = useState<UserProfile | null>(null);
+  const [rawProfileData, setRawProfileData] = useState<any>(null);
   const [loadingProfile, setLoadingProfile] = useState<boolean>(true);
 
   const apiBase = (import.meta.env.VITE_API_BASE_URL as string) || 'http://localhost:5000/api';
@@ -121,13 +175,18 @@ const ProfilePage = () => {
   };
 
   useEffect(() => {
+    // Don't start loading profile data until auth is complete
+    if (authLoading) return;
+    
     let mounted = true;
     (async () => {
       try {
         const me = await profileAPI.getMyProfile();
         console.log('Profile data received:', me); // Debug log
         if (!mounted) return;
+        
         if (!me) {
+          // Create default profile from auth user data
           setUser({
             firstName: authUser?.firstName || '',
             lastName: authUser?.lastName || '',
@@ -143,65 +202,119 @@ const ProfilePage = () => {
             cvUrl: null,
           });
         } else {
+          // Store raw profile data for profile completion
+          setRawProfileData(me);
+          
+          // Use profile data with auth user fallback
           const userData = {
             firstName: me.firstName || authUser?.firstName || '',
             lastName: me.lastName || authUser?.lastName || '',
             email: authUser?.email || '',
-            phone: authUser?.phone || '',
-            location: { address: me.address || '', city: me.city || '', country: me.country || '', postalCode: me.postalCode || '', region: me.district || '' },
+            phone: me.phoneNumber || authUser?.phone || '',
+            location: { 
+              address: me.address || '', 
+              city: me.city || '', 
+              country: me.country || '', 
+              postalCode: me.postalCode || '', 
+              region: me.district || '' 
+            },
             bio: me.bio || '',
-            status: me.status || 'JOB_SEEKER',
-            skills: (me.skills || []).map((ps: any) => ps.skill?.name).filter(Boolean),
-            experience: (me.experiences || []).map((exp: any) => ({
-              id: exp.id,
-              employerName: exp.employerName,
-              role: exp.role,
-              startDate: exp.startDate || '',
-              endDate: exp.endDate || '',
-              isCurrent: exp.isCurrent,
+            status: me.jobStatus === 'unemployed' ? 'JOB_SEEKER' : 
+                   me.jobStatus === 'employed' ? 'EMPLOYED' : 
+                   me.jobStatus === 'self_employed' ? 'FREELANCER' : 'JOB_SEEKER',
+            skills: [], // Will load skills separately
+            experience: (me.experience || []).map((exp: any) => ({
+              id: exp._id,
+              employerName: exp.company,
+              role: exp.title,
+              startDate: exp.startDate ? new Date(exp.startDate).toISOString().split('T')[0] : '',
+              endDate: exp.endDate ? new Date(exp.endDate).toISOString().split('T')[0] : '',
+              isCurrent: exp.isCurrent || false,
               description: exp.description || '',
             })),
-            education: (me.educations || []).map((ed: any) => ({
-              id: ed.id,
+            education: (me.education || []).map((ed: any) => ({
+              id: ed._id,
               degree: ed.degree || '',
-              institution: ed.school || '',
+              institution: ed.institution || '',
               fieldOfStudy: ed.fieldOfStudy || '',
-              startDate: ed.startDate || '',
-              endDate: ed.endDate || '',
+              startDate: ed.startDate ? new Date(ed.startDate).toISOString().split('T')[0] : '',
+              endDate: ed.endDate ? new Date(ed.endDate).toISOString().split('T')[0] : '',
               description: '',
             })),
-            profilePicture: toAbsolute(me.profilePictureUrl || null),
+            profilePicture: toAbsolute(me.profilePicture || null),
             cvUrl: toAbsolute(me.cvUrl || null),
           };
+          
+          // Load skills separately since they're handled differently
+          try {
+            const skills = await profileAPI.getMySkills();
+            userData.skills = skills.map((skill: any) => skill.skill?.name || skill.skillId?.name).filter(Boolean);
+          } catch (error) {
+            console.error('Error loading skills:', error);
+          }
           console.log('Setting user data:', userData); // Debug log
           setUser(userData);
+        }
+      } catch (error) {
+        console.error('Error loading profile:', error);
+        // Even if profile fails, create a user from auth data so page doesn't stay loading
+        if (mounted && authUser) {
+          setUser({
+            firstName: authUser.firstName || '',
+            lastName: authUser.lastName || '',
+            email: authUser.email || '',
+            phone: authUser.phone || '',
+            location: { address: '', city: '', country: '', postalCode: '', region: '' },
+            bio: '',
+            status: 'JOB_SEEKER',
+            skills: [],
+            experience: [],
+            education: [],
+            profilePicture: null,
+            cvUrl: null,
+          });
         }
       } finally {
         if (mounted) setLoadingProfile(false);
       }
     })();
     return () => { mounted = false; };
-  }, [authUser?.id]);
+  }, [authLoading, authUser]);
 
   const handleProfilePictureChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       console.log('Profile picture file selected:', file); // Debug log
-      // Preview locally
-      const reader = new FileReader();
-      reader.onload = () => {
-        setUser(prev => (prev ? { ...prev, profilePicture: reader.result as string } as UserProfile : prev));
-      };
-      reader.readAsDataURL(file);
-      // upload to backend
+      
+      // Create a preview URL for immediate display
+      const previewUrl = URL.createObjectURL(file);
+      setUser(prev => (prev ? { ...prev, profilePicture: previewUrl } as UserProfile : prev));
+      
+      // Upload to backend
       profileAPI.uploadProfilePicture(file).then(async (response) => {
         console.log('Profile picture upload response:', response); // Debug log
-        // Refresh profile to get updated data
+        
+        // Clean up preview URL
+        URL.revokeObjectURL(previewUrl);
+        
+        // Refresh profile to get updated data and refresh auth context
         const me = await profileAPI.getMyProfile();
         console.log('Refreshed profile data after picture upload:', me); // Debug log
-        setUser(prev => (prev ? { ...prev, profilePicture: toAbsolute(me.profilePictureUrl || '') } as UserProfile : prev));
+        
+        // Update with actual uploaded image URL
+        setUser(prev => (prev ? { ...prev, profilePicture: toAbsolute(me.profilePicture || null) } as UserProfile : prev));
+        
+        // Refresh auth context by calling auth API
+        try {
+          await authAPI.getCurrentUser(); // This will refresh the auth context
+        } catch (error) {
+          console.error('Error refreshing auth context:', error);
+        }
       }).catch((error) => {
         console.error('Error uploading profile picture:', error); // Debug log
+        // Revert to previous state on error
+        URL.revokeObjectURL(previewUrl);
+        setUser(prev => (prev ? { ...prev, profilePicture: toAbsolute(null) } as UserProfile : prev));
       });
     }
   };
@@ -215,19 +328,33 @@ const ProfilePage = () => {
       lastName: data.lastName,
       bio: data.bio,
       jobStatus: data.jobStatus ? (data.jobStatus === 'JOB_SEEKER' ? 'unemployed' : data.jobStatus === 'EMPLOYED' ? 'employed' : 'self_employed') : undefined,
-      phone: data.phone,
+      phoneNumber: data.phone, // Correct field name for backend
     }).then(async (response) => {
       console.log('Personal info update response:', response); // Debug log
+      
+      // Refresh profile data
       const me = await profileAPI.getMyProfile();
       console.log('Refreshed profile data:', me); // Debug log
+      
+      // Update local state
       setUser(prev => (prev ? { 
         ...prev, 
         firstName: me.firstName || '', 
         lastName: me.lastName || '', 
+        phone: me.phoneNumber || '',
         bio: me.bio || '', 
-        status: me.status || prev.status, 
-        profilePicture: toAbsolute(me.profilePictureUrl || '') 
+        status: me.jobStatus === 'unemployed' ? 'JOB_SEEKER' : 
+               me.jobStatus === 'employed' ? 'EMPLOYED' : 
+               me.jobStatus === 'self_employed' ? 'FREELANCER' : prev.status,
+        profilePicture: toAbsolute(me.profilePicture || null) 
       } as UserProfile : prev));
+      
+      // Refresh auth context to update global user data
+      try {
+        await authAPI.getCurrentUser();
+      } catch (error) {
+        console.error('Error refreshing auth context:', error);
+      }
     }).catch((error) => {
       console.error('Error saving personal info:', error); // Debug log
     });
@@ -265,52 +392,133 @@ const ProfilePage = () => {
   };
 
   const handleSaveSkills = async (skills: string[]) => {
-    console.log('Saving skills:', skills); // Debug log
-    setIsSkillsSaving(true);
-    try {
-      // Fetch current skill links to compute deletions
-      const current = await profileAPI.getMySkills(); // [{ skill: { id, name }, ... }]
-      console.log('Current skills from API:', current); // Debug log
-      const currentMap = new Map<string, string>(); // nameLower -> id
-      current.forEach((ps: any) => {
-        if (ps?.skill?.name && ps?.skillId) currentMap.set(String(ps.skill.name).toLowerCase(), String(ps.skillId));
-      });
-
-      // Resolve desired names to IDs (best-effort by exact name match)
-      const desiredNames = new Set(skills.map(s => s.trim()).filter(Boolean));
-      const desiredIds: string[] = [];
-      for (const name of desiredNames) {
-        const cached = currentMap.get(name.toLowerCase());
-        if (cached) {
-          desiredIds.push(cached);
-          continue;
-        }
-        const results = await profileAPI.searchSkills(name);
-        const exact = results.find(r => r.name?.toLowerCase() === name.toLowerCase());
-        if (exact) desiredIds.push(exact.id);
-      }
-
-      console.log('Desired skill IDs:', desiredIds); // Debug log
-
-      // Upsert desired
-      await Promise.all(desiredIds.map(id => profileAPI.upsertSkill({ skillId: id, level: 'beginner' })));
-
-      // Delete removed
-      const desiredIdSet = new Set(desiredIds);
-      const toDelete = current.filter((ps: any) => ps?.skillId && !desiredIdSet.has(ps.skillId)).map((ps: any) => ps.skillId as string);
-      console.log('Skills to delete:', toDelete); // Debug log
-      await Promise.all(toDelete.map(id => profileAPI.deleteSkill(id)));
-
-      // Refresh profile
-      const me = await profileAPI.getMyProfile();
-      console.log('Refreshed profile data after skills update:', me); // Debug log
-      setUser(prev => (prev ? { ...prev, skills: (me.skills || []).map((ps: any) => ps.skill?.name).filter(Boolean) } as UserProfile : prev));
-      
-      // Close modal only after successful save
+    console.log('🚀 ProfilePage: handleSaveSkills called with:', skills);
+    
+    if (!skills || skills.length === 0) {
+      console.log('⚠️ No skills provided, closing modal');
       setIsSkillsModalOpen(false);
+      return;
+    }
+    
+    setIsSkillsSaving(true);
+    
+    try {
+      console.log('📡 Step 1: Fetching current skills from database...');
+      const currentSkills = await profileAPI.getMySkills();
+      console.log('📊 Current skills in database:', currentSkills);
+      
+      console.log('🔍 Step 2: Processing each skill to find/create IDs...');
+      const skillsToSave: {id: string, name: string}[] = [];
+      
+      for (const skillName of skills) {
+        const trimmedName = skillName.trim();
+        if (!trimmedName) continue;
+        
+        console.log(`🔎 Processing skill: "${trimmedName}"`);
+        
+        // Check if we already have this skill
+        const existingSkill = currentSkills.find(
+          (cs: any) => cs.skill?.name?.toLowerCase() === trimmedName.toLowerCase()
+        );
+        
+        if (existingSkill) {
+          console.log(`✅ Found existing skill: ${trimmedName} (ID: ${existingSkill.skillId})`);
+          skillsToSave.push({ id: existingSkill.skillId, name: existingSkill.skill.name });
+        } else {
+          // Search for the skill in the database (case-insensitive)
+          console.log(`🔍 Searching for skill: "${trimmedName}"`);
+          try {
+            const searchResults = await profileAPI.searchSkills(trimmedName.toLowerCase());
+            console.log(`📋 Search results for "${trimmedName}":`, searchResults);
+            
+            const exactMatch = searchResults.find(
+              (s: any) => s.name?.toLowerCase() === trimmedName.toLowerCase()
+            );
+            
+            if (exactMatch) {
+              console.log(`✅ Found exact match: ${trimmedName} (ID: ${exactMatch._id || exactMatch.id})`);
+              skillsToSave.push({ id: exactMatch._id || exactMatch.id, name: exactMatch.name });
+            } else {
+              console.log(`⚠️ No exact match found for: "${trimmedName}". Creating new skill...`);
+              // If no match found, create a new skill
+              try {
+                const newSkill = await profileAPI.createSkill({
+                  name: trimmedName.toLowerCase(),
+                  category: 'Custom',
+                  description: `User-created skill: ${trimmedName}`
+                });
+                console.log(`✨ Created new skill: ${trimmedName} (ID: ${newSkill._id || newSkill.id})`);
+                skillsToSave.push({ id: newSkill._id || newSkill.id, name: newSkill.name });
+              } catch (createError) {
+                console.error(`❌ Error creating skill "${trimmedName}":`, createError);
+              }
+            }
+          } catch (searchError) {
+            console.error(`❌ Search error for skill "${trimmedName}":`, searchError);
+          }
+        }
+      }
+      
+      console.log('🎯 Skills to save:', skillsToSave);
+      
+      // Delete skills that are no longer selected
+      console.log('🗑️ Step 3: Removing unselected skills...');
+      const skillIdsToKeep = new Set(skillsToSave.map(s => s.id));
+      const skillsToDelete = currentSkills.filter(
+        (cs: any) => cs.skillId && !skillIdsToKeep.has(cs.skillId)
+      );
+      
+      console.log('🗑️ Skills to delete:', skillsToDelete);
+      
+      for (const skillToDelete of skillsToDelete) {
+        try {
+          console.log(`🗑️ Deleting skill: ${skillToDelete.skill?.name} (ID: ${skillToDelete.skillId})`);
+          await profileAPI.deleteSkill(skillToDelete.skillId);
+          console.log(`✅ Successfully deleted skill: ${skillToDelete.skillId}`);
+        } catch (deleteError) {
+          console.error(`❌ Error deleting skill ${skillToDelete.skillId}:`, deleteError);
+        }
+      }
+      
+      // Add/update the selected skills
+      console.log('💾 Step 4: Adding/updating selected skills...');
+      for (const skill of skillsToSave) {
+        try {
+          console.log(`💾 Upserting skill: ${skill.name} (ID: ${skill.id})`);
+          const result = await profileAPI.upsertSkill({ 
+            skillId: skill.id, 
+            level: 'beginner' 
+          });
+          console.log(`✅ Successfully upserted skill: ${skill.name}`, result);
+        } catch (upsertError) {
+          console.error(`❌ Error upserting skill ${skill.name}:`, upsertError);
+        }
+      }
+      
+      console.log('🔄 Step 5: Refreshing skills list...');
+      // Get fresh skills data
+      const updatedSkills = await profileAPI.getMySkills();
+      console.log('📊 Updated skills from database:', updatedSkills);
+      
+      // Extract skill names for UI display
+      const skillNames = updatedSkills
+        .map((skill: any) => skill.skill?.name || skill.skillId?.name)
+        .filter(Boolean);
+      
+      console.log('📝 Skill names for UI:', skillNames);
+      
+      // Update user state
+      setUser(prev => (prev ? { ...prev, skills: skillNames } as UserProfile : prev));
+      console.log('✅ Updated local user state');
+      
+      console.log('🎉 Skills saved successfully! Closing modal.');
+      setIsSkillsModalOpen(false);
+      
     } catch (error) {
-      console.error('Error saving skills:', error);
+      console.error('❌ Fatal error saving skills:', error);
+      alert('Error saving skills: ' + (error as Error).message);
     } finally {
+      console.log('✅ Setting saving state to false');
       setIsSkillsSaving(false);
     }
   };
@@ -337,10 +545,10 @@ const ProfilePage = () => {
         console.log('Experience update response:', response); // Debug log
         const me = await profileAPI.getMyProfile();
         console.log('Refreshed profile data after experience update:', me); // Debug log
-        setUser(prev => (prev ? { ...prev, experience: (me.experiences || []).map((exp: any) => ({ 
-          id: exp.id, 
-          employerName: exp.employerName, 
-          role: exp.role, 
+        setUser(prev => (prev ? { ...prev, experience: (me.experience || []).map((exp: any) => ({ 
+          id: exp._id, 
+          employerName: exp.company, 
+          role: exp.title, 
           startDate: exp.startDate ? new Date(exp.startDate).toISOString().split('T')[0] : '', 
           endDate: exp.endDate ? new Date(exp.endDate).toISOString().split('T')[0] : '', 
           isCurrent: exp.isCurrent, 
@@ -361,10 +569,10 @@ const ProfilePage = () => {
         console.log('Experience add response:', response); // Debug log
         const me = await profileAPI.getMyProfile();
         console.log('Refreshed profile data after experience add:', me); // Debug log
-        setUser(prev => (prev ? { ...prev, experience: (me.experiences || []).map((exp: any) => ({ 
-          id: exp.id, 
-          employerName: exp.employerName, 
-          role: exp.role, 
+        setUser(prev => (prev ? { ...prev, experience: (me.experience || []).map((exp: any) => ({ 
+          id: exp._id, 
+          employerName: exp.company, 
+          role: exp.title, 
           startDate: exp.startDate ? new Date(exp.startDate).toISOString().split('T')[0] : '', 
           endDate: exp.endDate ? new Date(exp.endDate).toISOString().split('T')[0] : '', 
           isCurrent: exp.isCurrent, 
@@ -402,10 +610,10 @@ const ProfilePage = () => {
         console.log('Education update response:', response); // Debug log
         const me = await profileAPI.getMyProfile();
         console.log('Refreshed profile data after education update:', me); // Debug log
-        setUser(prev => (prev ? { ...prev, education: (me.educations || []).map((ed: any) => ({ 
-          id: ed.id, 
+        setUser(prev => (prev ? { ...prev, education: (me.education || []).map((ed: any) => ({ 
+          id: ed._id, 
           degree: ed.degree || '', 
-          institution: ed.school || '', 
+          institution: ed.institution || '', 
           fieldOfStudy: ed.fieldOfStudy || '', 
           startDate: ed.startDate ? new Date(ed.startDate).toISOString().split('T')[0] : '', 
           endDate: ed.endDate ? new Date(ed.endDate).toISOString().split('T')[0] : '', 
@@ -426,10 +634,10 @@ const ProfilePage = () => {
         console.log('Education add response:', response); // Debug log
         const me = await profileAPI.getMyProfile();
         console.log('Refreshed profile data after education add:', me); // Debug log
-        setUser(prev => (prev ? { ...prev, education: (me.educations || []).map((ed: any) => ({ 
-          id: ed.id, 
+        setUser(prev => (prev ? { ...prev, education: (me.education || []).map((ed: any) => ({ 
+          id: ed._id, 
           degree: ed.degree || '', 
-          institution: ed.school || '', 
+          institution: ed.institution || '', 
           fieldOfStudy: ed.fieldOfStudy || '', 
           startDate: ed.startDate ? new Date(ed.startDate).toISOString().split('T')[0] : '', 
           endDate: ed.endDate ? new Date(ed.endDate).toISOString().split('T')[0] : '', 
@@ -447,10 +655,10 @@ const ProfilePage = () => {
     profileAPI.deleteEducation(id).then(async () => {
       // Refresh profile to get updated data
       const me = await profileAPI.getMyProfile();
-      setUser(prev => (prev ? { ...prev, education: (me.educations || []).map((ed: any) => ({ 
-        id: ed.id, 
+      setUser(prev => (prev ? { ...prev, education: (me.education || []).map((ed: any) => ({ 
+        id: ed._id, 
         degree: ed.degree || '', 
-        institution: ed.school || '', 
+        institution: ed.institution || '', 
         fieldOfStudy: ed.fieldOfStudy || '', 
         startDate: ed.startDate ? new Date(ed.startDate).toISOString().split('T')[0] : '', 
         endDate: ed.endDate ? new Date(ed.endDate).toISOString().split('T')[0] : '', 
@@ -464,10 +672,10 @@ const ProfilePage = () => {
     profileAPI.deleteExperience(id).then(async () => {
       // Refresh profile to get updated data
       const me = await profileAPI.getMyProfile();
-      setUser(prev => (prev ? { ...prev, experience: (me.experiences || []).map((exp: any) => ({ 
-        id: exp.id, 
-        employerName: exp.employerName, 
-        role: exp.role, 
+      setUser(prev => (prev ? { ...prev, experience: (me.experience || []).map((exp: any) => ({ 
+        id: exp._id, 
+        employerName: exp.company, 
+        role: exp.title, 
         startDate: exp.startDate ? new Date(exp.startDate).toISOString().split('T')[0] : '', 
         endDate: exp.endDate ? new Date(exp.endDate).toISOString().split('T')[0] : '', 
         isCurrent: exp.isCurrent, 
@@ -496,48 +704,126 @@ const ProfilePage = () => {
     }
   };
 
-  const handleViewCV = () => {
+  const handleViewCV = async () => {
     if (user && user.cvUrl) {
-      window.open(user.cvUrl, '_blank');
+      try {
+        // Use fetch with auth headers for authenticated access
+        const token = localStorage.getItem('token');
+        const response = await fetch(user.cvUrl, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          }
+        });
+        
+        if (response.ok) {
+          const blob = await response.blob();
+          const url = URL.createObjectURL(blob);
+          window.open(url, '_blank');
+          // Clean up the object URL after a delay to allow viewing
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
+        } else {
+          console.error('Failed to fetch CV:', response.statusText);
+          // Fallback: try direct URL opening
+          window.open(user.cvUrl, '_blank');
+        }
+      } catch (error) {
+        console.error('Error viewing CV:', error);
+        // Fallback: try direct URL opening
+        window.open(user.cvUrl, '_blank');
+      }
     }
   };
 
-  const handleDownloadCV = () => {
+  const handleDownloadCV = async () => {
     if (user && user.cvUrl) {
-      const link = document.createElement('a');
-      link.href = user.cvUrl;
-      link.download = cvFileName || 'my-cv.pdf';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      try {
+        // Use fetch with auth headers for authenticated access
+        const token = localStorage.getItem('token');
+        const response = await fetch(user.cvUrl, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          }
+        });
+        
+        if (response.ok) {
+          const blob = await response.blob();
+          const url = URL.createObjectURL(blob);
+          
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = cvFileName || 'my-cv.pdf';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          
+          // Clean up the object URL
+          URL.revokeObjectURL(url);
+        } else {
+          console.error('Failed to download CV:', response.statusText);
+          // Fallback: try direct download
+          const link = document.createElement('a');
+          link.href = user.cvUrl;
+          link.download = cvFileName || 'my-cv.pdf';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        }
+      } catch (error) {
+        console.error('Error downloading CV:', error);
+        // Fallback: try direct download
+        const link = document.createElement('a');
+        link.href = user.cvUrl;
+        link.download = cvFileName || 'my-cv.pdf';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
     }
   };
 
-  if (loadingProfile || !user) {
+  // Show loading while auth is loading or profile is loading
+  if (authLoading || loadingProfile) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <CircularProgress percentage={60} size={80} progressColor="#4F46E5" textColor="#4F56E5" showText={false} />
+        <LoadingSpinner size="lg" className="text-indigo-600" />
+        <span className="ml-2 text-indigo-600 font-medium">Loading profile...</span>
       </div>
     );
   }
 
-  const profileCompletion = calculateProfileCompletion(user);
+  // If no user after loading is complete, there's an error
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">Unable to load profile</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700"
+          >
+            Reload Page
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Get profile completion from backend data (consistent with dashboard)
+  const profileCompletion = rawProfileData?.profileCompletion || 0;
 
   return (
-    <div>
+    <div className="relative">
     <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="absolute  right-9">
-        <div className="relative">
+      {/* Profile Completion Indicator - Fixed Position */}
+      <div className="fixed top-20 right-6 z-10">
+        <div className="bg-white rounded-full shadow-lg p-2">
           <CircularProgress 
             percentage={profileCompletion} 
             size={80}
             progressColor="#4F46E5"
-            textColor="#4F56E5"
+            textColor="#4F46E5"
             showText={true}
           />
-          <div className="absolute inset-0 flex items-center justify-center text-xs font-medium text-gray-600">
-            
-          </div>
         </div>
       </div>
       <div className="max-w-4xl mx-auto">
@@ -552,9 +838,9 @@ const ProfilePage = () => {
           <div className="space-y-4">
             <div className="flex flex-col items-center mb-4">
               <div className="relative group">
-                <img
+                <AuthenticatedImage
                   className="h-24 w-24 rounded-full object-cover"
-                  src={user.profilePicture || ''}
+                  src={user.profilePicture}
                   alt={`${user.firstName} ${user.lastName}`}
                 />
                 <label 
@@ -818,7 +1104,8 @@ const ProfilePage = () => {
           lastName: user.lastName,
           email: user.email,
           phone: user.phone,
-          bio: user.bio
+          bio: user.bio,
+          jobStatus: user.status
         }}
         isSaving={false}
       />
