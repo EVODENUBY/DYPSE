@@ -1,9 +1,14 @@
-import mongoose from 'mongoose';
-import dotenv from 'dotenv';
-import bcrypt from 'bcryptjs';
-import { User, UserRole } from '../models/User.js';
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const mongoose_1 = __importDefault(require("mongoose"));
+const dotenv_1 = __importDefault(require("dotenv"));
+const bcryptjs_1 = __importDefault(require("bcryptjs"));
+const User_js_1 = require("../models/User.js");
 // Load environment variables
-dotenv.config();
+dotenv_1.default.config();
 // Admin user details
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@dypse.com';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'Admin@1234';
@@ -15,23 +20,23 @@ async function createAdminUser() {
         if (!process.env.MONGODB_URI) {
             throw new Error('MONGODB_URI is not defined in environment variables');
         }
-        await mongoose.connect(process.env.MONGODB_URI);
+        await mongoose_1.default.connect(process.env.MONGODB_URI);
         console.log('Connected to MongoDB');
         // Check if admin already exists
-        const existingAdmin = await User.findOne({ email: ADMIN_EMAIL }).exec();
+        const existingAdmin = await User_js_1.User.findOne({ email: ADMIN_EMAIL }).exec();
         if (existingAdmin) {
             console.log('Admin user already exists');
-            await mongoose.disconnect();
+            await mongoose_1.default.disconnect();
             return;
         }
         // Hash password
-        const salt = await bcrypt.genSalt(12);
-        const hashedPassword = await bcrypt.hash(ADMIN_PASSWORD, salt);
+        const salt = await bcryptjs_1.default.genSalt(12);
+        const hashedPassword = await bcryptjs_1.default.hash(ADMIN_PASSWORD, salt);
         // Create admin user
-        const adminUser = new User({
+        const adminUser = new User_js_1.User({
             email: ADMIN_EMAIL,
             passwordHash: hashedPassword,
-            role: UserRole.ADMIN,
+            role: User_js_1.UserRole.ADMIN,
             firstName: ADMIN_FIRST_NAME,
             lastName: ADMIN_LAST_NAME,
             isEmailVerified: true,
@@ -49,7 +54,7 @@ async function createAdminUser() {
         process.exit(1);
     }
     finally {
-        await mongoose.disconnect();
+        await mongoose_1.default.disconnect();
         process.exit(0);
     }
 }

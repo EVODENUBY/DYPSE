@@ -1,15 +1,21 @@
-import { UserActivity } from '../models/userActivity.model';
-import mongoose from 'mongoose';
-export class ActivityLogger {
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.ActivityHelpers = exports.ActivityLogger = void 0;
+const userActivity_model_1 = require("../models/userActivity.model");
+const mongoose_1 = __importDefault(require("mongoose"));
+class ActivityLogger {
     /**
      * Log a user activity
      */
     static async logActivity(params) {
         try {
             const userObjectId = typeof params.userId === 'string'
-                ? new mongoose.Types.ObjectId(params.userId)
+                ? new mongoose_1.default.Types.ObjectId(params.userId)
                 : params.userId;
-            await UserActivity.create({
+            await userActivity_model_1.UserActivity.create({
                 userId: userObjectId,
                 activityType: params.activityType,
                 title: params.title,
@@ -28,13 +34,13 @@ export class ActivityLogger {
     static async getRecentActivities(userId, limit = 10, activityTypes) {
         try {
             const userObjectId = typeof userId === 'string'
-                ? new mongoose.Types.ObjectId(userId)
+                ? new mongoose_1.default.Types.ObjectId(userId)
                 : userId;
             const query = { userId: userObjectId };
             if (activityTypes && activityTypes.length > 0) {
                 query.activityType = { $in: activityTypes };
             }
-            const activities = await UserActivity
+            const activities = await userActivity_model_1.UserActivity
                 .find(query)
                 .sort({ createdAt: -1 })
                 .limit(limit)
@@ -52,11 +58,11 @@ export class ActivityLogger {
     static async getActivityStats(userId, days = 30) {
         try {
             const userObjectId = typeof userId === 'string'
-                ? new mongoose.Types.ObjectId(userId)
+                ? new mongoose_1.default.Types.ObjectId(userId)
                 : userId;
             const startDate = new Date();
             startDate.setDate(startDate.getDate() - days);
-            const stats = await UserActivity.aggregate([
+            const stats = await userActivity_model_1.UserActivity.aggregate([
                 {
                     $match: {
                         userId: userObjectId,
@@ -88,7 +94,7 @@ export class ActivityLogger {
         try {
             const cutoffDate = new Date();
             cutoffDate.setDate(cutoffDate.getDate() - days);
-            await UserActivity.deleteMany({
+            await userActivity_model_1.UserActivity.deleteMany({
                 createdAt: { $lt: cutoffDate }
             });
         }
@@ -97,8 +103,9 @@ export class ActivityLogger {
         }
     }
 }
+exports.ActivityLogger = ActivityLogger;
 // Helper functions for common activities
-export const ActivityHelpers = {
+exports.ActivityHelpers = {
     profileUpdate: (userId, changes) => ActivityLogger.logActivity({
         userId,
         activityType: 'profile_update',

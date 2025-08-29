@@ -1,3 +1,6 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.notFound = exports.AppError = exports.catchAsync = exports.globalErrorHandler = void 0;
 class AppError extends Error {
     constructor(message, statusCode) {
         super(message);
@@ -7,6 +10,7 @@ class AppError extends Error {
         Error.captureStackTrace(this, this.constructor);
     }
 }
+exports.AppError = AppError;
 const handleCastErrorDB = (err) => {
     const message = `Invalid ${err.path}: ${err.value}`;
     return new AppError(message, 400);
@@ -47,7 +51,7 @@ const sendErrorProd = (err, res) => {
         });
     }
 };
-export const globalErrorHandler = (err, req, res, next) => {
+const globalErrorHandler = (err, req, res, next) => {
     err.statusCode = err.statusCode || 500;
     err.status = err.status || 'error';
     if (process.env.NODE_ENV === 'development') {
@@ -65,14 +69,16 @@ export const globalErrorHandler = (err, req, res, next) => {
         sendErrorProd(error, res);
     }
 };
-export const catchAsync = (fn) => {
+exports.globalErrorHandler = globalErrorHandler;
+const catchAsync = (fn) => {
     return (req, res, next) => {
         fn(req, res, next).catch(next);
     };
 };
-export { AppError };
+exports.catchAsync = catchAsync;
 ;
-export const notFound = (req, res, next) => {
+const notFound = (req, res, next) => {
     next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404));
 };
+exports.notFound = notFound;
 //# sourceMappingURL=errorHandler.js.map

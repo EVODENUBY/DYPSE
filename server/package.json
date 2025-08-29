@@ -3,12 +3,14 @@
   "version": "1.0.0",
   "description": "",
   "main": "./dist/index.js",
-  "type": "module",
+  "type": "commonjs",
   "scripts": {
+    "clean": "rimraf dist",
     "build": "tsc",
-    "start": "node --experimental-specifier-resolution=node dist/index.js",
-    "dev": "tsx watch src/index.ts",
-    "create:admin": "tsx src/scripts/createAdmin.ts"
+    "start": "node dist/index.js",
+    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "create:admin": "tsx src/scripts/createAdmin.ts",
+    "prestart": "npm run build"
   },
   "keywords": [],
   "author": "",
@@ -45,6 +47,7 @@
     "@types/validator": "^13.15.2",
     "cross-env": "^10.0.0",
     "nodemon": "^3.1.0",
+    "rimraf": "^6.0.1",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
     "tsx": "^4.20.5",

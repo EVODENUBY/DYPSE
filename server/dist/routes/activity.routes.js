@@ -1,12 +1,14 @@
-import { Router } from 'express';
-import { ActivityLogger } from '../services/activityLogger.service';
-import { authenticateToken } from '../middleware/auth.middleware';
-const router = Router();
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const activityLogger_service_1 = require("../services/activityLogger.service");
+const auth_middleware_1 = require("../middleware/auth.middleware");
+const router = (0, express_1.Router)();
 /**
  * GET /api/activity/recent
  * Get recent activities for the authenticated user
  */
-router.get('/recent', authenticateToken, async (req, res) => {
+router.get('/recent', auth_middleware_1.authenticateToken, async (req, res) => {
     try {
         const userId = req.user.id;
         const limit = parseInt(req.query.limit) || 10;
@@ -15,7 +17,7 @@ router.get('/recent', authenticateToken, async (req, res) => {
         if (activityTypes) {
             types = activityTypes.split(',').map(type => type.trim());
         }
-        const activities = await ActivityLogger.getRecentActivities(userId, limit, types);
+        const activities = await activityLogger_service_1.ActivityLogger.getRecentActivities(userId, limit, types);
         res.json({
             success: true,
             activities: activities.map(activity => ({
@@ -40,11 +42,11 @@ router.get('/recent', authenticateToken, async (req, res) => {
  * GET /api/activity/stats
  * Get activity statistics for the authenticated user
  */
-router.get('/stats', authenticateToken, async (req, res) => {
+router.get('/stats', auth_middleware_1.authenticateToken, async (req, res) => {
     try {
         const userId = req.user.id;
         const days = parseInt(req.query.days) || 30;
-        const stats = await ActivityLogger.getActivityStats(userId, days);
+        const stats = await activityLogger_service_1.ActivityLogger.getActivityStats(userId, days);
         res.json({
             success: true,
             stats,
@@ -59,5 +61,5 @@ router.get('/stats', authenticateToken, async (req, res) => {
         });
     }
 });
-export default router;
+exports.default = router;
 //# sourceMappingURL=activity.routes.js.map

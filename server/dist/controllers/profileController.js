@@ -1,9 +1,15 @@
-import { YouthProfile, JobStatus } from '../models/youthProfile.model';
-import { User } from '../models/user.model';
-import { Skill, UserSkill } from '../models/skill.model';
-import { cleanupOldFile } from '../middleware/upload.middleware';
-import { ActivityHelpers } from '../services/activityLogger.service';
-import path from 'path';
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.getProfileAnalytics = exports.getProfileInsights = exports.deleteEducation = exports.updateEducation = exports.addEducation = exports.deleteExperience = exports.updateExperience = exports.addExperience = exports.deleteSkill = exports.upsertSkill = exports.createSkill = exports.searchSkills = exports.getMySkills = exports.uploadCV = exports.uploadProfilePicture = exports.updateMyProfile = exports.getMyProfile = void 0;
+const youthProfile_model_1 = require("../models/youthProfile.model");
+const user_model_1 = require("../models/user.model");
+const skill_model_1 = require("../models/skill.model");
+const upload_middleware_1 = require("../middleware/upload.middleware");
+const activityLogger_service_1 = require("../services/activityLogger.service");
+const path_1 = __importDefault(require("path"));
 // Enhanced helper function to calculate profile completion percentage
 const calculateProfileCompletion = (profile, userSkills) => {
     const weights = {
@@ -130,25 +136,25 @@ const getProfileCompletionInsights = (profile, userSkills) => {
     return insights;
 };
 // Get current user's profile
-export const getMyProfile = async (req, res) => {
+const getMyProfile = async (req, res) => {
     try {
         const userId = req.user?.id;
         if (!userId) {
             return res.status(401).json({ success: false, message: 'User not authenticated' });
         }
-        let profile = await YouthProfile.findOne({ userId }).populate('userId').exec();
+        let profile = await youthProfile_model_1.YouthProfile.findOne({ userId }).populate('userId').exec();
         if (!profile) {
             // Create a new profile with default values
-            const user = await User.findById(userId).exec();
+            const user = await user_model_1.User.findById(userId).exec();
             if (!user) {
                 return res.status(404).json({ success: false, message: 'User not found' });
             }
-            profile = new YouthProfile({
+            profile = new youthProfile_model_1.YouthProfile({
                 userId,
                 firstName: user.firstName || user.email.split('@')[0], // Use user's firstName or email prefix
                 lastName: user.lastName || '', // Use user's lastName if available
                 phoneNumber: user.phone || '', // Use user's phone if available
-                jobStatus: JobStatus.UNEMPLOYED,
+                jobStatus: youthProfile_model_1.JobStatus.UNEMPLOYED,
                 profileCompletion: 0,
                 skills: [],
                 education: [],
@@ -157,7 +163,7 @@ export const getMyProfile = async (req, res) => {
             await profile.save();
         }
         // Load user skills for accurate profile completion calculation
-        const userSkills = await UserSkill.find({ userId }).populate('skillId');
+        const userSkills = await skill_model_1.UserSkill.find({ userId }).populate('skillId');
         // Calculate and update profile completion with skills included
         const completionPercentage = calculateProfileCompletion(profile, userSkills);
         if (profile.profileCompletion !== completionPercentage) {
@@ -171,8 +177,9 @@ export const getMyProfile = async (req, res) => {
         res.status(500).json({ success: false, message: 'Internal server error' });
     }
 };
+exports.getMyProfile = getMyProfile;
 // Update profile
-export const updateMyProfile = async (req, res) => {
+const updateMyProfile = async (req, res) => {
     try {
         const userId = req.user?.id;
         if (!userId) {
@@ -182,11 +189,11 @@ export const updateMyProfile = async (req, res) => {
         // Convert jobStatus to match enum
         if (updateData.jobStatus) {
             const statusMap = {
-                'unemployed': JobStatus.UNEMPLOYED,
-                'employed': JobStatus.EMPLOYED,
-                'self_employed': JobStatus.SELF_EMPLOYED
+                'unemployed': youthProfile_model_1.JobStatus.UNEMPLOYED,
+                'employed': youthProfile_model_1.JobStatus.EMPLOYED,
+                'self_employed': youthProfile_model_1.JobStatus.SELF_EMPLOYED
             };
-            updateData.jobStatus = statusMap[updateData.jobStatus] || JobStatus.UNEMPLOYED;
+            updateData.jobStatus = statusMap[updateData.jobStatus] || youthProfile_model_1.JobStatus.UNEMPLOYED;
         }
         // Update the user model if firstName, lastName, or phone has changed
         const userUpdateData = {};
@@ -197,18 +204,18 @@ export const updateMyProfile = async (req, res) => {
         if (updateData.phone)
             userUpdateData.phone = updateData.phone;
         if (Object.keys(userUpdateData).length > 0) {
-            await User.findByIdAndUpdate(userId, userUpdateData).exec();
+            await user_model_1.User.findByIdAndUpdate(userId, userUpdateData).exec();
         }
-        const profile = await YouthProfile.findOneAndUpdate({ userId }, updateData, { new: true, upsert: true }).exec();
+        const profile = await youthProfile_model_1.YouthProfile.findOneAndUpdate({ userId }, updateData, { new: true, upsert: true }).exec();
         // Load user skills for accurate profile completion calculation
-        const userSkills = await UserSkill.find({ userId }).populate('skillId');
+        const userSkills = await skill_model_1.UserSkill.find({ userId }).populate('skillId');
         // Calculate and update profile completion with skills included
         const completionPercentage = calculateProfileCompletion(profile, userSkills);
         profile.profileCompletion = completionPercentage;
         await profile.save();
         // Log profile update activity
         const changes = Object.keys(updateData);
-        ActivityHelpers.profileUpdate(userId, changes);
+        activityLogger_service_1.ActivityHelpers.profileUpdate(userId, changes);
         res.json({ success: true, data: profile });
     }
     catch (error) {
@@ -216,8 +223,9 @@ export const updateMyProfile = async (req, res) => {
         res.status(500).json({ success: false, message: 'Internal server error' });
     }
 };
+exports.updateMyProfile = updateMyProfile;
 // Upload profile picture
-export const uploadProfilePicture = async (req, res) => {
+const uploadProfilePicture = async (req, res) => {
     try {
         const userId = req.user?.id;
         if (!userId) {
@@ -226,25 +234,25 @@ export const uploadProfilePicture = async (req, res) => {
         if (!req.file) {
             return res.status(400).json({ success: false, message: 'No file uploaded' });
         }
-        const profile = await YouthProfile.findOne({ userId });
+        const profile = await youthProfile_model_1.YouthProfile.findOne({ userId });
         if (!profile) {
             return res.status(404).json({ success: false, message: 'Profile not found' });
         }
         // Clean up old profile picture
         if (profile.profilePicture) {
-            const oldFilePath = path.join(process.cwd(), 'uploads/profile-pictures', path.basename(profile.profilePicture));
-            cleanupOldFile(oldFilePath);
+            const oldFilePath = path_1.default.join(process.cwd(), 'uploads/profile-pictures', path_1.default.basename(profile.profilePicture));
+            (0, upload_middleware_1.cleanupOldFile)(oldFilePath);
         }
         // Update profile with new picture path
         const fileUrl = `/uploads/profile-pictures/${req.file.filename}`;
         profile.profilePicture = fileUrl;
         // Load user skills for accurate profile completion calculation
-        const userSkills = await UserSkill.find({ userId }).populate('skillId');
+        const userSkills = await skill_model_1.UserSkill.find({ userId }).populate('skillId');
         // Recalculate profile completion with skills included
         profile.profileCompletion = calculateProfileCompletion(profile, userSkills);
         await profile.save();
         // Log profile picture upload activity
-        ActivityHelpers.profilePictureUpload(userId, req.file.filename);
+        activityLogger_service_1.ActivityHelpers.profilePictureUpload(userId, req.file.filename);
         res.json({
             success: true,
             message: 'Profile picture uploaded successfully',
@@ -259,8 +267,9 @@ export const uploadProfilePicture = async (req, res) => {
         res.status(500).json({ success: false, message: 'Internal server error' });
     }
 };
+exports.uploadProfilePicture = uploadProfilePicture;
 // Upload CV
-export const uploadCV = async (req, res) => {
+const uploadCV = async (req, res) => {
     try {
         const userId = req.user?.id;
         if (!userId) {
@@ -269,25 +278,25 @@ export const uploadCV = async (req, res) => {
         if (!req.file) {
             return res.status(400).json({ success: false, message: 'No file uploaded' });
         }
-        const profile = await YouthProfile.findOne({ userId });
+        const profile = await youthProfile_model_1.YouthProfile.findOne({ userId });
         if (!profile) {
             return res.status(404).json({ success: false, message: 'Profile not found' });
         }
         // Clean up old CV
         if (profile.cvUrl) {
-            const oldFilePath = path.join(process.cwd(), 'uploads/cvs', path.basename(profile.cvUrl));
-            cleanupOldFile(oldFilePath);
+            const oldFilePath = path_1.default.join(process.cwd(), 'uploads/cvs', path_1.default.basename(profile.cvUrl));
+            (0, upload_middleware_1.cleanupOldFile)(oldFilePath);
         }
         // Update profile with new CV path
         const fileUrl = `/uploads/cvs/${req.file.filename}`;
         profile.cvUrl = fileUrl;
         // Load user skills for accurate profile completion calculation
-        const userSkills = await UserSkill.find({ userId }).populate('skillId');
+        const userSkills = await skill_model_1.UserSkill.find({ userId }).populate('skillId');
         // Recalculate profile completion with skills included
         profile.profileCompletion = calculateProfileCompletion(profile, userSkills);
         await profile.save();
         // Log CV upload activity
-        ActivityHelpers.cvUpload(userId, req.file.filename);
+        activityLogger_service_1.ActivityHelpers.cvUpload(userId, req.file.filename);
         res.json({
             success: true,
             message: 'CV uploaded successfully',
@@ -302,14 +311,15 @@ export const uploadCV = async (req, res) => {
         res.status(500).json({ success: false, message: 'Internal server error' });
     }
 };
+exports.uploadCV = uploadCV;
 // Skills management
-export const getMySkills = async (req, res) => {
+const getMySkills = async (req, res) => {
     try {
         const userId = req.user?.id;
         if (!userId) {
             return res.status(401).json({ success: false, message: 'User not authenticated' });
         }
-        const userSkills = await UserSkill.find({ userId }).populate('skillId');
+        const userSkills = await skill_model_1.UserSkill.find({ userId }).populate('skillId');
         res.json({
             success: true,
             data: userSkills.map(us => ({
@@ -326,13 +336,14 @@ export const getMySkills = async (req, res) => {
         res.status(500).json({ success: false, message: 'Internal server error' });
     }
 };
-export const searchSkills = async (req, res) => {
+exports.getMySkills = getMySkills;
+const searchSkills = async (req, res) => {
     try {
         const { q } = req.query;
         if (!q) {
             return res.status(400).json({ success: false, message: 'Search query required' });
         }
-        const skills = await Skill.find({
+        const skills = await skill_model_1.Skill.find({
             name: { $regex: q, $options: 'i' }
         }).limit(10);
         res.json({ success: true, data: skills });
@@ -342,21 +353,22 @@ export const searchSkills = async (req, res) => {
         res.status(500).json({ success: false, message: 'Internal server error' });
     }
 };
-export const createSkill = async (req, res) => {
+exports.searchSkills = searchSkills;
+const createSkill = async (req, res) => {
     try {
         const { name, category, description } = req.body;
         if (!name || !category) {
             return res.status(400).json({ success: false, message: 'Skill name and category are required' });
         }
         // Check if skill already exists (case-insensitive)
-        const existingSkill = await Skill.findOne({
+        const existingSkill = await skill_model_1.Skill.findOne({
             name: name.toLowerCase().trim()
         });
         if (existingSkill) {
             return res.json({ success: true, data: existingSkill }); // Return existing skill
         }
         // Create new skill
-        const newSkill = new Skill({
+        const newSkill = new skill_model_1.Skill({
             name: name.toLowerCase().trim(),
             category: category.trim(),
             description: description?.trim()
@@ -368,7 +380,7 @@ export const createSkill = async (req, res) => {
         console.error('Create skill error:', error);
         if (error.code === 11000) { // Duplicate key error
             // Try to find the existing skill and return it
-            const existingSkill = await Skill.findOne({ name: req.body.name?.toLowerCase()?.trim() });
+            const existingSkill = await skill_model_1.Skill.findOne({ name: req.body.name?.toLowerCase()?.trim() });
             if (existingSkill) {
                 return res.json({ success: true, data: existingSkill });
             }
@@ -376,7 +388,8 @@ export const createSkill = async (req, res) => {
         res.status(500).json({ success: false, message: 'Internal server error' });
     }
 };
-export const upsertSkill = async (req, res) => {
+exports.createSkill = createSkill;
+const upsertSkill = async (req, res) => {
     try {
         const userId = req.user?.id;
         const { skillId, level } = req.body;
@@ -387,21 +400,21 @@ export const upsertSkill = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Skill ID and level required' });
         }
         // Check if skill exists
-        const skill = await Skill.findById(skillId);
+        const skill = await skill_model_1.Skill.findById(skillId);
         if (!skill) {
             return res.status(404).json({ success: false, message: 'Skill not found' });
         }
         // Upsert user skill
-        const userSkill = await UserSkill.findOneAndUpdate({ userId, skillId }, { level }, { new: true, upsert: true });
+        const userSkill = await skill_model_1.UserSkill.findOneAndUpdate({ userId, skillId }, { level }, { new: true, upsert: true });
         // Update profile completion with skills included
-        const profile = await YouthProfile.findOne({ userId });
+        const profile = await youthProfile_model_1.YouthProfile.findOne({ userId });
         if (profile) {
-            const userSkills = await UserSkill.find({ userId }).populate('skillId');
+            const userSkills = await skill_model_1.UserSkill.find({ userId }).populate('skillId');
             profile.profileCompletion = calculateProfileCompletion(profile, userSkills);
             await profile.save();
         }
         // Log skill addition activity
-        ActivityHelpers.skillAdd(userId, skill.name, level);
+        activityLogger_service_1.ActivityHelpers.skillAdd(userId, skill.name, level);
         res.json({ success: true, data: userSkill });
     }
     catch (error) {
@@ -409,7 +422,8 @@ export const upsertSkill = async (req, res) => {
         res.status(500).json({ success: false, message: 'Internal server error' });
     }
 };
-export const deleteSkill = async (req, res) => {
+exports.upsertSkill = upsertSkill;
+const deleteSkill = async (req, res) => {
     try {
         const userId = req.user?.id;
         const { skillId } = req.params;
@@ -417,18 +431,18 @@ export const deleteSkill = async (req, res) => {
             return res.status(401).json({ success: false, message: 'User not authenticated' });
         }
         // Get skill name before deletion for logging
-        const skillToDelete = await UserSkill.findOne({ userId, skillId }).populate('skillId');
+        const skillToDelete = await skill_model_1.UserSkill.findOne({ userId, skillId }).populate('skillId');
         const skillName = skillToDelete?.skillId?.name || 'Unknown skill';
-        await UserSkill.findOneAndDelete({ userId, skillId });
+        await skill_model_1.UserSkill.findOneAndDelete({ userId, skillId });
         // Update profile completion with skills included
-        const profile = await YouthProfile.findOne({ userId });
+        const profile = await youthProfile_model_1.YouthProfile.findOne({ userId });
         if (profile) {
-            const userSkills = await UserSkill.find({ userId }).populate('skillId');
+            const userSkills = await skill_model_1.UserSkill.find({ userId }).populate('skillId');
             profile.profileCompletion = calculateProfileCompletion(profile, userSkills);
             await profile.save();
         }
         // Log skill removal activity
-        ActivityHelpers.skillRemove(userId, skillName);
+        activityLogger_service_1.ActivityHelpers.skillRemove(userId, skillName);
         res.json({ success: true, message: 'Skill removed successfully' });
     }
     catch (error) {
@@ -436,15 +450,16 @@ export const deleteSkill = async (req, res) => {
         res.status(500).json({ success: false, message: 'Internal server error' });
     }
 };
+exports.deleteSkill = deleteSkill;
 // Experience management
-export const addExperience = async (req, res) => {
+const addExperience = async (req, res) => {
     try {
         const userId = req.user?.id;
         const experienceData = req.body;
         if (!userId) {
             return res.status(401).json({ success: false, message: 'User not authenticated' });
         }
-        const profile = await YouthProfile.findOne({ userId });
+        const profile = await youthProfile_model_1.YouthProfile.findOne({ userId });
         if (!profile) {
             return res.status(404).json({ success: false, message: 'Profile not found' });
         }
@@ -460,11 +475,11 @@ export const addExperience = async (req, res) => {
         };
         profile.experience.push(experience);
         // Load user skills for accurate profile completion calculation
-        const userSkills = await UserSkill.find({ userId }).populate('skillId');
+        const userSkills = await skill_model_1.UserSkill.find({ userId }).populate('skillId');
         profile.profileCompletion = calculateProfileCompletion(profile, userSkills);
         await profile.save();
         // Log experience addition activity
-        ActivityHelpers.experienceAdd(userId, experience.company, experience.title);
+        activityLogger_service_1.ActivityHelpers.experienceAdd(userId, experience.company, experience.title);
         res.json({ success: true, data: profile.experience[profile.experience.length - 1] });
     }
     catch (error) {
@@ -472,7 +487,8 @@ export const addExperience = async (req, res) => {
         res.status(500).json({ success: false, message: 'Internal server error' });
     }
 };
-export const updateExperience = async (req, res) => {
+exports.addExperience = addExperience;
+const updateExperience = async (req, res) => {
     try {
         const userId = req.user?.id;
         const { experienceId } = req.params;
@@ -480,7 +496,7 @@ export const updateExperience = async (req, res) => {
         if (!userId) {
             return res.status(401).json({ success: false, message: 'User not authenticated' });
         }
-        const profile = await YouthProfile.findOne({ userId });
+        const profile = await youthProfile_model_1.YouthProfile.findOne({ userId });
         if (!profile) {
             return res.status(404).json({ success: false, message: 'Profile not found' });
         }
@@ -500,11 +516,11 @@ export const updateExperience = async (req, res) => {
         };
         profile.experience[experienceIndex] = { ...profile.experience[experienceIndex], ...updatedExperience };
         // Load user skills for accurate profile completion calculation
-        const userSkills = await UserSkill.find({ userId }).populate('skillId');
+        const userSkills = await skill_model_1.UserSkill.find({ userId }).populate('skillId');
         profile.profileCompletion = calculateProfileCompletion(profile, userSkills);
         await profile.save();
         // Log experience update activity
-        ActivityHelpers.experienceUpdate(userId, updatedExperience.company, updatedExperience.title);
+        activityLogger_service_1.ActivityHelpers.experienceUpdate(userId, updatedExperience.company, updatedExperience.title);
         res.json({ success: true, data: profile.experience[experienceIndex] });
     }
     catch (error) {
@@ -512,14 +528,15 @@ export const updateExperience = async (req, res) => {
         res.status(500).json({ success: false, message: 'Internal server error' });
     }
 };
-export const deleteExperience = async (req, res) => {
+exports.updateExperience = updateExperience;
+const deleteExperience = async (req, res) => {
     try {
         const userId = req.user?.id;
         const { experienceId } = req.params;
         if (!userId) {
             return res.status(401).json({ success: false, message: 'User not authenticated' });
         }
-        const profile = await YouthProfile.findOne({ userId });
+        const profile = await youthProfile_model_1.YouthProfile.findOne({ userId });
         if (!profile) {
             return res.status(404).json({ success: false, message: 'Profile not found' });
         }
@@ -529,11 +546,11 @@ export const deleteExperience = async (req, res) => {
         const title = experienceToDelete?.title || 'Unknown role';
         profile.experience = profile.experience.filter(exp => exp._id?.toString() !== experienceId);
         // Load user skills for accurate profile completion calculation
-        const userSkills = await UserSkill.find({ userId }).populate('skillId');
+        const userSkills = await skill_model_1.UserSkill.find({ userId }).populate('skillId');
         profile.profileCompletion = calculateProfileCompletion(profile, userSkills);
         await profile.save();
         // Log experience deletion activity
-        ActivityHelpers.experienceDelete(userId, company, title);
+        activityLogger_service_1.ActivityHelpers.experienceDelete(userId, company, title);
         res.json({ success: true, message: 'Experience deleted successfully' });
     }
     catch (error) {
@@ -541,15 +558,16 @@ export const deleteExperience = async (req, res) => {
         res.status(500).json({ success: false, message: 'Internal server error' });
     }
 };
+exports.deleteExperience = deleteExperience;
 // Education management
-export const addEducation = async (req, res) => {
+const addEducation = async (req, res) => {
     try {
         const userId = req.user?.id;
         const educationData = req.body;
         if (!userId) {
             return res.status(401).json({ success: false, message: 'User not authenticated' });
         }
-        const profile = await YouthProfile.findOne({ userId });
+        const profile = await youthProfile_model_1.YouthProfile.findOne({ userId });
         if (!profile) {
             return res.status(404).json({ success: false, message: 'Profile not found' });
         }
@@ -564,11 +582,11 @@ export const addEducation = async (req, res) => {
         };
         profile.education.push(education);
         // Load user skills for accurate profile completion calculation
-        const userSkills = await UserSkill.find({ userId }).populate('skillId');
+        const userSkills = await skill_model_1.UserSkill.find({ userId }).populate('skillId');
         profile.profileCompletion = calculateProfileCompletion(profile, userSkills);
         await profile.save();
         // Log education addition activity
-        ActivityHelpers.educationAdd(userId, education.institution, education.degree);
+        activityLogger_service_1.ActivityHelpers.educationAdd(userId, education.institution, education.degree);
         res.json({ success: true, data: profile.education[profile.education.length - 1] });
     }
     catch (error) {
@@ -576,7 +594,8 @@ export const addEducation = async (req, res) => {
         res.status(500).json({ success: false, message: 'Internal server error' });
     }
 };
-export const updateEducation = async (req, res) => {
+exports.addEducation = addEducation;
+const updateEducation = async (req, res) => {
     try {
         const userId = req.user?.id;
         const { educationId } = req.params;
@@ -584,7 +603,7 @@ export const updateEducation = async (req, res) => {
         if (!userId) {
             return res.status(401).json({ success: false, message: 'User not authenticated' });
         }
-        const profile = await YouthProfile.findOne({ userId });
+        const profile = await youthProfile_model_1.YouthProfile.findOne({ userId });
         if (!profile) {
             return res.status(404).json({ success: false, message: 'Profile not found' });
         }
@@ -603,11 +622,11 @@ export const updateEducation = async (req, res) => {
         };
         profile.education[educationIndex] = { ...profile.education[educationIndex], ...updatedEducation };
         // Load user skills for accurate profile completion calculation
-        const userSkills = await UserSkill.find({ userId }).populate('skillId');
+        const userSkills = await skill_model_1.UserSkill.find({ userId }).populate('skillId');
         profile.profileCompletion = calculateProfileCompletion(profile, userSkills);
         await profile.save();
         // Log education update activity
-        ActivityHelpers.educationUpdate(userId, updatedEducation.institution, updatedEducation.degree);
+        activityLogger_service_1.ActivityHelpers.educationUpdate(userId, updatedEducation.institution, updatedEducation.degree);
         res.json({ success: true, data: profile.education[educationIndex] });
     }
     catch (error) {
@@ -615,14 +634,15 @@ export const updateEducation = async (req, res) => {
         res.status(500).json({ success: false, message: 'Internal server error' });
     }
 };
-export const deleteEducation = async (req, res) => {
+exports.updateEducation = updateEducation;
+const deleteEducation = async (req, res) => {
     try {
         const userId = req.user?.id;
         const { educationId } = req.params;
         if (!userId) {
             return res.status(401).json({ success: false, message: 'User not authenticated' });
         }
-        const profile = await YouthProfile.findOne({ userId });
+        const profile = await youthProfile_model_1.YouthProfile.findOne({ userId });
         if (!profile) {
             return res.status(404).json({ success: false, message: 'Profile not found' });
         }
@@ -632,11 +652,11 @@ export const deleteEducation = async (req, res) => {
         const degree = educationToDelete?.degree || 'Unknown degree';
         profile.education = profile.education.filter(edu => edu._id?.toString() !== educationId);
         // Load user skills for accurate profile completion calculation
-        const userSkills = await UserSkill.find({ userId }).populate('skillId');
+        const userSkills = await skill_model_1.UserSkill.find({ userId }).populate('skillId');
         profile.profileCompletion = calculateProfileCompletion(profile, userSkills);
         await profile.save();
         // Log education deletion activity
-        ActivityHelpers.educationDelete(userId, institution, degree);
+        activityLogger_service_1.ActivityHelpers.educationDelete(userId, institution, degree);
         res.json({ success: true, message: 'Education deleted successfully' });
     }
     catch (error) {
@@ -644,18 +664,19 @@ export const deleteEducation = async (req, res) => {
         res.status(500).json({ success: false, message: 'Internal server error' });
     }
 };
+exports.deleteEducation = deleteEducation;
 // Profile Analytics and Insights
-export const getProfileInsights = async (req, res) => {
+const getProfileInsights = async (req, res) => {
     try {
         const userId = req.user?.id;
         if (!userId) {
             return res.status(401).json({ success: false, message: 'User not authenticated' });
         }
-        const profile = await YouthProfile.findOne({ userId });
+        const profile = await youthProfile_model_1.YouthProfile.findOne({ userId });
         if (!profile) {
             return res.status(404).json({ success: false, message: 'Profile not found' });
         }
-        const userSkills = await UserSkill.find({ userId }).populate('skillId');
+        const userSkills = await skill_model_1.UserSkill.find({ userId }).populate('skillId');
         const completionPercentage = calculateProfileCompletion(profile, userSkills);
         const insights = getProfileCompletionInsights(profile, userSkills);
         // Calculate profile strength metrics
@@ -694,6 +715,7 @@ export const getProfileInsights = async (req, res) => {
         res.status(500).json({ success: false, message: 'Internal server error' });
     }
 };
+exports.getProfileInsights = getProfileInsights;
 // Calculate employability score based on profile data
 const calculateEmployabilityScore = (profile, userSkills) => {
     let score = 0;
@@ -743,7 +765,7 @@ const getSkillRecommendations = async (userSkills, profile) => {
         // Digital skills are always valuable
         recommendations.push(...skillCategories.digital.filter(skill => !existingSkillNames.includes(skill)).slice(0, 2));
         // Find skills in database that match recommendations
-        const recommendedSkills = await Skill.find({
+        const recommendedSkills = await skill_model_1.Skill.find({
             name: { $in: recommendations }
         }).limit(5);
         return recommendedSkills;
@@ -754,17 +776,17 @@ const getSkillRecommendations = async (userSkills, profile) => {
     }
 };
 // Get profile analytics dashboard data
-export const getProfileAnalytics = async (req, res) => {
+const getProfileAnalytics = async (req, res) => {
     try {
         const userId = req.user?.id;
         if (!userId) {
             return res.status(401).json({ success: false, message: 'User not authenticated' });
         }
-        const profile = await YouthProfile.findOne({ userId });
+        const profile = await youthProfile_model_1.YouthProfile.findOne({ userId });
         if (!profile) {
             return res.status(404).json({ success: false, message: 'Profile not found' });
         }
-        const userSkills = await UserSkill.find({ userId }).populate('skillId');
+        const userSkills = await skill_model_1.UserSkill.find({ userId }).populate('skillId');
         // Calculate various metrics
         const metrics = {
             profileCompletion: calculateProfileCompletion(profile, userSkills),
@@ -793,6 +815,7 @@ export const getProfileAnalytics = async (req, res) => {
         res.status(500).json({ success: false, message: 'Internal server error' });
     }
 };
+exports.getProfileAnalytics = getProfileAnalytics;
 // Helper functions for analytics
 const getSkillsDistribution = (userSkills) => {
     const distribution = { beginner: 0, intermediate: 0, expert: 0 };

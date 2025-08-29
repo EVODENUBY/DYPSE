@@ -1,35 +1,41 @@
-import jwt from 'jsonwebtoken';
-import { validationResult } from 'express-validator';
-import { Types } from 'mongoose';
-import crypto from 'crypto';
-import { User } from '../models/User';
-import { UserRole } from '../models/User';
-import { ActivityHelpers } from '../services/activityLogger.service';
-import { sendPasswordResetEmail, sendPasswordResetSuccessEmail } from '../utils/email';
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.resetPassword = exports.requestPasswordReset = exports.authorize = exports.protect = exports.getMe = exports.login = exports.register = void 0;
+const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
+const express_validator_1 = require("express-validator");
+const mongoose_1 = require("mongoose");
+const crypto_1 = __importDefault(require("crypto"));
+const User_1 = require("../models/User");
+const User_2 = require("../models/User");
+const activityLogger_service_1 = require("../services/activityLogger.service");
+const email_1 = require("../utils/email");
 // Generate JWT Token
 const generateToken = (id, role) => {
     if (!process.env.JWT_SECRET) {
         throw new Error('JWT_SECRET is not defined');
     }
-    return jwt.sign({ id, role }, process.env.JWT_SECRET, { expiresIn: '30d' });
+    return jsonwebtoken_1.default.sign({ id, role }, process.env.JWT_SECRET, { expiresIn: '30d' });
 };
 // @desc    Register a new user
 // @route   POST /api/auth/register
 // @access  Public
-export const register = async (req, res, next) => {
+const register = async (req, res, next) => {
     try {
-        const errors = validationResult(req);
+        const errors = (0, express_validator_1.validationResult)(req);
         if (!errors.isEmpty()) {
             return res.status(400).json({ errors: errors.array() });
         }
-        const { firstName, lastName, email, password, phone, role = UserRole.YOUTH } = req.body;
+        const { firstName, lastName, email, password, phone, role = User_2.UserRole.YOUTH } = req.body;
         // Check if user exists
-        const userExists = await User.findOne({ email }).exec();
+        const userExists = await User_1.User.findOne({ email }).exec();
         if (userExists) {
             return res.status(400).json({ message: 'User already exists' });
         }
         // Create user with proper typing
-        const user = new User({
+        const user = new User_1.User({
             firstName,
             lastName,
             email,
@@ -43,7 +49,7 @@ export const register = async (req, res, next) => {
         // Save the user to generate the _id
         await user.save();
         // Log account creation activity
-        ActivityHelpers.accountCreated(user._id.toString());
+        activityLogger_service_1.ActivityHelpers.accountCreated(user._id.toString());
         // Generate token
         const token = generateToken(user._id.toString(), user.role);
         res.status(201).json({
@@ -60,18 +66,19 @@ export const register = async (req, res, next) => {
         next(error);
     }
 };
+exports.register = register;
 // @desc    Auth user & get token
 // @route   POST /api/auth/login
 // @access  Public
-export const login = async (req, res, next) => {
+const login = async (req, res, next) => {
     try {
-        const errors = validationResult(req);
+        const errors = (0, express_validator_1.validationResult)(req);
         if (!errors.isEmpty()) {
             return res.status(400).json({ errors: errors.array() });
         }
         const { email, password } = req.body;
         // Find user with password hash
-        const user = await User.findByEmailWithPassword(email);
+        const user = await User_1.User.findByEmailWithPassword(email);
         if (!user) {
             console.log('No user found with email:', email);
             return res.status(401).json({ message: 'Invalid credentials' });
@@ -125,13 +132,14 @@ export const login = async (req, res, next) => {
         next(error);
     }
 };
+exports.login = login;
 // @desc    Get user profile
 // @route   GET /api/auth/me
 // @access  Private
-export const getMe = async (req, res, next) => {
+const getMe = async (req, res, next) => {
     try {
         // Get the latest user data (not from cache)
-        const user = await User.findOne({ _id: new Types.ObjectId(req.user?.id) })
+        const user = await User_1.User.findOne({ _id: new mongoose_1.Types.ObjectId(req.user?.id) })
             .select('-passwordHash -__v')
             .lean()
             .exec();
@@ -168,9 +176,10 @@ export const getMe = async (req, res, next) => {
         next(error);
     }
 };
+exports.getMe = getMe;
 // @desc    Protect routes
 // @access  Private
-export const protect = async (req, res, next) => {
+const protect = async (req, res, next) => {
     try {
         let token;
         if (req.headers.authorization?.startsWith('Bearer')) {
@@ -182,8 +191,8 @@ export const protect = async (req, res, next) => {
         if (!process.env.JWT_SECRET) {
             throw new Error('JWT_SECRET is not defined');
         }
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const user = await User.findById(decoded.id).select('-passwordHash').lean().exec();
+        const decoded = jsonwebtoken_1.default.verify(token, process.env.JWT_SECRET);
+        const user = await User_1.User.findById(decoded.id).select('-passwordHash').lean().exec();
         if (!user) {
             return res.status(401).json({ message: 'Not authorized, user not found' });
         }
@@ -197,9 +206,10 @@ export const protect = async (req, res, next) => {
         return res.status(401).json({ message: 'Not authorized, token failed' });
     }
 };
+exports.protect = protect;
 // @desc    Authorize roles
 // @access  Private
-export const authorize = (...roles) => {
+const authorize = (...roles) => {
     return (req, res, next) => {
         if (!req.user || !roles.includes(req.user.role)) {
             return res.status(403).json({
@@ -209,38 +219,40 @@ export const authorize = (...roles) => {
         next();
     };
 };
+exports.authorize = authorize;
 // @desc    Request password reset
 // @route   POST /api/auth/request-password-reset
 // @access  Public
-export const requestPasswordReset = async (req, res, next) => {
+const requestPasswordReset = async (req, res, next) => {
     try {
         const { email } = req.body;
-        const user = await User.findOne({ email }).exec();
+        const user = await User_1.User.findOne({ email }).exec();
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
         // Generate reset token
-        const resetToken = crypto.randomBytes(20).toString('hex');
+        const resetToken = crypto_1.default.randomBytes(20).toString('hex');
         const resetTokenExpiry = Date.now() + 3600000; // 1 hour from now
         user.resetToken = resetToken;
         user.resetTokenExpiry = new Date(resetTokenExpiry);
         await user.save();
         // Send email with reset link
         const userName = user.firstName || user.email.split('@')[0];
-        await sendPasswordResetEmail(user.email, userName, resetToken);
+        await (0, email_1.sendPasswordResetEmail)(user.email, userName, resetToken);
         res.json({ message: 'Password reset email sent' });
     }
     catch (error) {
         next(error);
     }
 };
+exports.requestPasswordReset = requestPasswordReset;
 // @desc    Reset password with token
 // @route   POST /api/auth/reset-password
 // @access  Public
-export const resetPassword = async (req, res, next) => {
+const resetPassword = async (req, res, next) => {
     try {
         const { token, password } = req.body;
-        const user = await User.findOne({
+        const user = await User_1.User.findOne({
             resetToken: token,
             resetTokenExpiry: { $gt: new Date() }
         }).exec();
@@ -264,7 +276,7 @@ export const resetPassword = async (req, res, next) => {
         await user.save();
         // Send confirmation email
         const userName = user.firstName || user.email.split('@')[0];
-        await sendPasswordResetSuccessEmail(user.email, userName);
+        await (0, email_1.sendPasswordResetSuccessEmail)(user.email, userName);
         console.log(`Password reset successfully for user: ${user.email}`);
         res.status(200).json({
             success: true,
@@ -276,4 +288,5 @@ export const resetPassword = async (req, res, next) => {
         next(error);
     }
 };
+exports.resetPassword = resetPassword;
 //# sourceMappingURL=authController.js.map

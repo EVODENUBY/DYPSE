@@ -1,4 +1,10 @@
-import nodemailer from 'nodemailer';
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.testEmailConfig = exports.sendPasswordResetSuccessEmail = exports.sendPasswordResetEmail = void 0;
+const nodemailer_1 = __importDefault(require("nodemailer"));
 // Create transporter with configuration from environment variables
 const createTransporter = () => {
     const config = {
@@ -10,7 +16,7 @@ const createTransporter = () => {
             pass: process.env.SMTP_PASS || '',
         },
     };
-    return nodemailer.createTransport(config);
+    return nodemailer_1.default.createTransport(config);
 };
 //password reset email 
 const getPasswordResetEmailTemplate = (userName, resetLink) => {
@@ -312,7 +318,7 @@ const getPasswordResetSuccessTemplate = (userName) => {
   `;
 };
 // Send password reset email
-export const sendPasswordResetEmail = async (email, userName, resetToken) => {
+const sendPasswordResetEmail = async (email, userName, resetToken) => {
     try {
         const transporter = createTransporter();
         const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
@@ -331,8 +337,9 @@ export const sendPasswordResetEmail = async (email, userName, resetToken) => {
         throw new Error('Failed to send password reset email');
     }
 };
+exports.sendPasswordResetEmail = sendPasswordResetEmail;
 // Send password reset success email
-export const sendPasswordResetSuccessEmail = async (email, userName) => {
+const sendPasswordResetSuccessEmail = async (email, userName) => {
     try {
         const transporter = createTransporter();
         const mailOptions = {
@@ -348,8 +355,9 @@ export const sendPasswordResetSuccessEmail = async (email, userName) => {
         console.error('Error sending password reset success email:', error);
     }
 };
+exports.sendPasswordResetSuccessEmail = sendPasswordResetSuccessEmail;
 // Test email configuration
-export const testEmailConfig = async () => {
+const testEmailConfig = async () => {
     try {
         const transporter = createTransporter();
         await transporter.verify();
@@ -361,4 +369,5 @@ export const testEmailConfig = async () => {
         return false;
     }
 };
+exports.testEmailConfig = testEmailConfig;
 //# sourceMappingURL=email.js.map

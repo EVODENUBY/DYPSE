@@ -1,5 +1,11 @@
-import mongoose from 'mongoose';
-export const connectDB = async () => {
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.connectDB = void 0;
+const mongoose_1 = __importDefault(require("mongoose"));
+const connectDB = async () => {
     if (!process.env.MONGODB_URI) {
         throw new Error('MONGODB_URI is not defined in environment variables');
     }
@@ -9,7 +15,7 @@ export const connectDB = async () => {
         socketTimeoutMS: 45000,
     };
     try {
-        const conn = await mongoose.connect(process.env.MONGODB_URI, options);
+        const conn = await mongoose_1.default.connect(process.env.MONGODB_URI, options);
         console.log(`MongoDB Connected: ${conn.connection.host}`);
     }
     catch (error) {
@@ -21,11 +27,12 @@ export const connectDB = async () => {
         }
         process.exit(1);
     }
-    mongoose.connection.on('error', (err) => {
+    mongoose_1.default.connection.on('error', (err) => {
         console.error('MongoDB connection error:', err);
     });
-    mongoose.connection.on('disconnected', () => {
+    mongoose_1.default.connection.on('disconnected', () => {
         console.log('MongoDB disconnected');
     });
 };
+exports.connectDB = connectDB;
 //# sourceMappingURL=db.js.map

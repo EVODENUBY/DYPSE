@@ -1,36 +1,42 @@
-import multer from 'multer';
-import path from 'path';
-import fs from 'fs';
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.cleanupOldFile = exports.handleUploadError = exports.uploadCV = exports.uploadProfilePicture = void 0;
+const multer_1 = __importDefault(require("multer"));
+const path_1 = __importDefault(require("path"));
+const fs_1 = __importDefault(require("fs"));
 // Ensure upload directories exist
 const ensureDirectoryExists = (dirPath) => {
-    if (!fs.existsSync(dirPath)) {
-        fs.mkdirSync(dirPath, { recursive: true });
+    if (!fs_1.default.existsSync(dirPath)) {
+        fs_1.default.mkdirSync(dirPath, { recursive: true });
     }
 };
 // Configure storage for profile pictures
-const profilePictureStorage = multer.diskStorage({
+const profilePictureStorage = multer_1.default.diskStorage({
     destination: (req, file, cb) => {
-        const uploadPath = path.join(process.cwd(), 'uploads/profile-pictures');
+        const uploadPath = path_1.default.join(process.cwd(), 'uploads/profile-pictures');
         ensureDirectoryExists(uploadPath);
         cb(null, uploadPath);
     },
     filename: (req, file, cb) => {
         const userId = req.user?.id || 'unknown';
-        const fileExtension = path.extname(file.originalname);
+        const fileExtension = path_1.default.extname(file.originalname);
         const fileName = `profile_${userId}_${Date.now()}${fileExtension}`;
         cb(null, fileName);
     }
 });
 // Configure storage for CV uploads
-const cvStorage = multer.diskStorage({
+const cvStorage = multer_1.default.diskStorage({
     destination: (req, file, cb) => {
-        const uploadPath = path.join(process.cwd(), 'uploads/cvs');
+        const uploadPath = path_1.default.join(process.cwd(), 'uploads/cvs');
         ensureDirectoryExists(uploadPath);
         cb(null, uploadPath);
     },
     filename: (req, file, cb) => {
         const userId = req.user?.id || 'unknown';
-        const fileExtension = path.extname(file.originalname);
+        const fileExtension = path_1.default.extname(file.originalname);
         const fileName = `cv_${userId}_${Date.now()}${fileExtension}`;
         cb(null, fileName);
     }
@@ -60,14 +66,14 @@ const documentFileFilter = (req, file, cb) => {
     }
 };
 // Multer configurations
-export const uploadProfilePicture = multer({
+exports.uploadProfilePicture = (0, multer_1.default)({
     storage: profilePictureStorage,
     fileFilter: imageFileFilter,
     limits: {
         fileSize: 5 * 1024 * 1024, // 5MB limit
     },
 });
-export const uploadCV = multer({
+exports.uploadCV = (0, multer_1.default)({
     storage: cvStorage,
     fileFilter: documentFileFilter,
     limits: {
@@ -75,8 +81,8 @@ export const uploadCV = multer({
     },
 });
 // Error handling middleware for multer errors
-export const handleUploadError = (error, req, res, next) => {
-    if (error instanceof multer.MulterError) {
+const handleUploadError = (error, req, res, next) => {
+    if (error instanceof multer_1.default.MulterError) {
         if (error.code === 'LIMIT_FILE_SIZE') {
             return res.status(400).json({
                 success: false,
@@ -98,15 +104,17 @@ export const handleUploadError = (error, req, res, next) => {
     }
     next(error);
 };
+exports.handleUploadError = handleUploadError;
 // Cleanup old files helper
-export const cleanupOldFile = (filePath) => {
-    if (filePath && fs.existsSync(filePath)) {
+const cleanupOldFile = (filePath) => {
+    if (filePath && fs_1.default.existsSync(filePath)) {
         try {
-            fs.unlinkSync(filePath);
+            fs_1.default.unlinkSync(filePath);
         }
         catch (error) {
             console.error('Error deleting old file:', error);
         }
     }
 };
+exports.cleanupOldFile = cleanupOldFile;
 //# sourceMappingURL=upload.middleware.js.map

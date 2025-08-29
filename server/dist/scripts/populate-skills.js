@@ -1,6 +1,11 @@
-import 'dotenv/config';
-import mongoose from 'mongoose';
-import { Skill } from '../models/skill.model';
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+require("dotenv/config");
+const mongoose_1 = __importDefault(require("mongoose"));
+const skill_model_1 = require("../models/skill.model");
 const sampleSkills = [
     // Technical Skills
     { name: 'javascript', category: 'Programming Languages', description: 'JavaScript programming language' },
@@ -64,13 +69,13 @@ const populateSkills = async () => {
     try {
         // Connect to MongoDB
         const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/dypse';
-        await mongoose.connect(MONGODB_URI);
+        await mongoose_1.default.connect(MONGODB_URI);
         console.log('Connected to MongoDB');
         // Clear existing skills
-        await Skill.deleteMany({});
+        await skill_model_1.Skill.deleteMany({});
         console.log('Cleared existing skills');
         // Insert sample skills
-        const insertedSkills = await Skill.insertMany(sampleSkills);
+        const insertedSkills = await skill_model_1.Skill.insertMany(sampleSkills);
         console.log(`Inserted ${insertedSkills.length} skills`);
         console.log('✅ Skills populated successfully!');
     }
@@ -78,7 +83,7 @@ const populateSkills = async () => {
         console.error('❌ Error populating skills:', error);
     }
     finally {
-        await mongoose.connection.close();
+        await mongoose_1.default.connection.close();
         console.log('Database connection closed');
     }
 };

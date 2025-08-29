@@ -1,6 +1,12 @@
-import jwt from 'jsonwebtoken';
-import { User, UserRole } from '../models/User';
-export const authenticateToken = async (req, res, next) => {
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.requireAdmin = exports.requireEmployer = exports.requireYouth = exports.authorize = exports.authenticateToken = void 0;
+const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
+const User_1 = require("../models/User");
+const authenticateToken = async (req, res, next) => {
     try {
         let token;
         // Check Authorization header
@@ -15,9 +21,9 @@ export const authenticateToken = async (req, res, next) => {
         }
         try {
             // Verify JWT token
-            const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your_jwt_secret');
+            const decoded = jsonwebtoken_1.default.verify(token, process.env.JWT_SECRET || 'your_jwt_secret');
             // Check if user still exists
-            const user = await User.findById(decoded.id).exec();
+            const user = await User_1.User.findById(decoded.id).exec();
             if (!user) {
                 return res.status(401).json({
                     success: false,
@@ -40,13 +46,13 @@ export const authenticateToken = async (req, res, next) => {
             next();
         }
         catch (jwtError) {
-            if (jwtError instanceof jwt.TokenExpiredError) {
+            if (jwtError instanceof jsonwebtoken_1.default.TokenExpiredError) {
                 return res.status(401).json({
                     success: false,
                     message: 'Token has expired'
                 });
             }
-            else if (jwtError instanceof jwt.JsonWebTokenError) {
+            else if (jwtError instanceof jsonwebtoken_1.default.JsonWebTokenError) {
                 return res.status(401).json({
                     success: false,
                     message: 'Invalid token'
@@ -65,8 +71,9 @@ export const authenticateToken = async (req, res, next) => {
         });
     }
 };
+exports.authenticateToken = authenticateToken;
 // Middleware to check for specific roles
-export const authorize = (...roles) => {
+const authorize = (...roles) => {
     return (req, res, next) => {
         if (!req.user) {
             return res.status(401).json({
@@ -83,10 +90,11 @@ export const authorize = (...roles) => {
         next();
     };
 };
+exports.authorize = authorize;
 // Middleware to check if user is a youth
-export const requireYouth = authorize(UserRole.YOUTH);
+exports.requireYouth = (0, exports.authorize)(User_1.UserRole.YOUTH);
 // Middleware to check if user is an employer
-export const requireEmployer = authorize(UserRole.EMPLOYER);
+exports.requireEmployer = (0, exports.authorize)(User_1.UserRole.EMPLOYER);
 // Middleware to check if user is an admin
-export const requireAdmin = authorize(UserRole.ADMIN);
+exports.requireAdmin = (0, exports.authorize)(User_1.UserRole.ADMIN);
 //# sourceMappingURL=auth.middleware.js.map
