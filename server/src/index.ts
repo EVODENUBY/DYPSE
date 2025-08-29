@@ -60,8 +60,11 @@ const startServer = async () => {
     
     // Start the server
     app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
-      console.log(`MongoDB connected: ${mongoose.connection.host}`);
+      console.log('======================================');
+      console.log(' DYPSE BACKEND API IS RUNNING');
+      console.log(` http://localhost:${PORT}`);
+      console.log(` MongoDB connected: ${mongoose.connection.host}`);
+      console.log('======================================');
     });
   } catch (error) {
     console.error('Failed to start server:', error);

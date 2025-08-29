@@ -2,8 +2,21 @@ import express from 'express';
 import path from 'path';
 import fs from 'fs';
 import { protect } from '../controllers/authController';
+import { Request, Response } from 'express';
 
 const router = express.Router();
+
+// Root route
+router.get('/', (req: Request, res: Response) => {
+  res.status(200).json({
+    success: true,
+    message: '🚀 Welcome to DYNAMIC YOUTH PROFILING SYSTEM(DYPSE) API',
+    version: '1.0.0',
+    documentation: 'Please refer to the API documentation for available endpoints',
+    status: 'Running smoothly',
+    timestamp: new Date().toISOString()
+  });
+});
 
 // Serve profile pictures publicly, CVs with authentication
 router.get('/uploads/profile-pictures/:filename', (req, res) => {
