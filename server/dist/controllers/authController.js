@@ -2,9 +2,10 @@ import jwt from 'jsonwebtoken';
 import { validationResult } from 'express-validator';
 import { Types } from 'mongoose';
 import crypto from 'crypto';
-import { User, UserRole } from '../models/User.js';
-import { ActivityHelpers } from '../services/activityLogger.service.js';
-import { sendPasswordResetEmail, sendPasswordResetSuccessEmail } from '../utils/email.js';
+import { User } from '../models/User';
+import { UserRole } from '../models/User';
+import { ActivityHelpers } from '../services/activityLogger.service';
+import { sendPasswordResetEmail, sendPasswordResetSuccessEmail } from '../utils/email';
 // Generate JWT Token
 const generateToken = (id, role) => {
     if (!process.env.JWT_SECRET) {
