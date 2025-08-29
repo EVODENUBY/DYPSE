@@ -15,8 +15,8 @@ import ExperienceModal from '../../components/modals/ExperienceModal';
 import EducationModal from '../../components/modals/EducationModal';
 import ProfileInsights from '../../components/ProfileInsights';
 import { useAuth } from '@/contexts/AuthContext';
-import { profileAPI } from '@/lib/profileApi';
-import { authAPI } from '@/lib/api';
+import { profileAPI } from '../../lib/profileApi';
+import { authAPI, API_BASE_URL } from '../../lib/api';
 
 // Authenticated Image Component
 const AuthenticatedImage = ({ src, alt, className, fallbackSrc }: { src: string | null, alt: string, className: string, fallbackSrc?: string }) => {
@@ -167,8 +167,7 @@ const ProfilePage = () => {
   const [rawProfileData, setRawProfileData] = useState<any>(null);
   const [loadingProfile, setLoadingProfile] = useState<boolean>(true);
 
-  const apiBase = (import.meta.env.VITE_API_BASE_URL as string) || 'http://localhost:5000/api';
-  const uploadsBase = apiBase.replace(/\/api\/?$/, '');
+  const uploadsBase = API_BASE_URL.replace(/\/api\/?$/, '');
   const toAbsolute = (p: string | null): string | null => {
     if (!p) return null;
     return p.startsWith('/uploads/') ? `${uploadsBase}${p}` : p;

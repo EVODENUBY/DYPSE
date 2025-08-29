@@ -5,9 +5,11 @@ import { useAuth } from '@/contexts/AuthContext';
 import { formatDistanceToNow } from 'date-fns';
 import { profileAPI } from '@/lib/profileApi';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { UserActivity } from '@/lib/activitiesApi';
-import { formatActivitiesForDisplay, FormattedActivity } from '@/lib/activityUtils';
+import type { UserActivity } from '@/lib/activitiesApi';
+import { formatActivitiesForDisplay } from '@/lib/activityUtils';
+import type { FormattedActivity } from '@/lib/activityUtils';
 import ActivityFeed from '@/components/ActivityFeed';
+import { API_BASE_URL } from '../../lib/api';
 
 const DashboardPage = () => {
   const { user } = useAuth();
@@ -23,8 +25,7 @@ const DashboardPage = () => {
   const greeting = currentHour < 12 ? 'Good morning' : currentHour < 18 ? 'Good afternoon' : 'Good evening';
   
   // Helper function to create absolute URLs for uploaded files
-  const apiBase = (import.meta.env.VITE_API_BASE_URL as string) || 'http://localhost:5000/api';
-  const uploadsBase = apiBase.replace(/\/api\/?$/, '');
+  const uploadsBase = API_BASE_URL.replace(/\/api\/?$/, '');
   const toAbsolute = (p: string | null): string | null => {
     if (!p) return null;
     return p.startsWith('/uploads/') ? `${uploadsBase}${p}` : p;

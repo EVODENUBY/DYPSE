@@ -18,8 +18,24 @@ const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/dypse'
 const app = express();
 
 // CORS configuration
+const allowedOrigins = [
+  'http://localhost:3000',
+  'https://dypse-client.onrender.com', // Add your deployed frontend URL here
+  'https://dypse.onrender.com' // Also allow the backend's own domain
+];
+
 const corsOptions = {
-  origin: 'http://localhost:3000', // frontend URL
+  origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
+    // Allow requests with no origin (like mobile apps, curl, etc.)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) === -1) {
+      const msg = `The CORS policy for this site does not allow access from the specified Origin: ${origin}`;
+      console.warn(msg);
+      return callback(new Error(msg), false);
+    }
+    return callback(null, true);
+  },
   credentials: true, // Allow credentials (cookies, authorization headers, etc.)
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],

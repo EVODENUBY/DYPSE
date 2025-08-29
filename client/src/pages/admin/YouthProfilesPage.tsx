@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_BASE_URL } from '../../lib/api';
 import toast from 'react-hot-toast';
 import { youthApi } from '../../lib/api';
 import { 
@@ -362,7 +363,7 @@ const YouthProfilesPage: React.FC = () => {
               const profilePicture = updatedUser.profilePicture 
                 ? updatedUser.profilePicture.startsWith('http')
                   ? updatedUser.profilePicture
-                  : `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api'}${updatedUser.profilePicture.startsWith('/') ? '' : '/'}${updatedUser.profilePicture}`
+                  : `${API_BASE_URL}${updatedUser.profilePicture.startsWith('/') ? '' : '/'}${updatedUser.profilePicture}`
                 : y.profilePicture;
               
               return {
@@ -677,7 +678,7 @@ const YouthProfilesPage: React.FC = () => {
                               className="h-full w-full object-cover"
                               src={youth.profilePicture.startsWith('http') 
                                 ? youth.profilePicture 
-                                : `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api'}${youth.profilePicture.startsWith('/') ? '' : '/'}${youth.profilePicture}`
+                                : `${API_BASE_URL}${youth.profilePicture.startsWith('/') ? '' : '/'}${youth.profilePicture}`
                               } 
                               alt={`${youth.firstName} ${youth.lastName}`}
                               onError={(e) => {

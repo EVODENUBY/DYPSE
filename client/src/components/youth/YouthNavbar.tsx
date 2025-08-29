@@ -5,6 +5,7 @@ import { useNotifications } from '@/contexts/NotificationContext';
 import { formatDistanceToNow } from 'date-fns';
 import { NotificationBadge } from '@/components/common/NotificationBadge';
 import { profileAPI } from '@/lib/profileApi';
+import { API_BASE_URL } from '../../lib/api';
 import { 
   BellIcon, 
   MagnifyingGlassIcon as SearchIcon, 
@@ -35,8 +36,7 @@ const YouthNavbar: React.FC<YouthNavbarProps> = ({ onToggleSidebar }) => {
   const navigate = useNavigate();
   
   // Helper function to create absolute URLs for uploaded files
-  const apiBase = (import.meta.env.VITE_API_BASE_URL as string) || 'http://localhost:5000/api';
-  const uploadsBase = apiBase.replace(/\/api\/?$/, '');
+  const uploadsBase = API_BASE_URL.replace(/\/api\/?$/, '');
   const toAbsolute = (p: string | null): string | null => {
     if (!p) return null;
     return p.startsWith('/uploads/') ? `${uploadsBase}${p}` : p;
