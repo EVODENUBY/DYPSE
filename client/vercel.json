@@ -3,7 +3,7 @@
     { "handle": "filesystem" },
     { "src": "/.*", "dest": "/index.html" }
   ],
-  "rewrites": [
+    "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
