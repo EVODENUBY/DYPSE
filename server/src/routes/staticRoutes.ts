@@ -2,12 +2,12 @@ import express from 'express';
 import path from 'path';
 import fs from 'fs';
 import { protect } from '../controllers/authController';
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 
 const router = express.Router();
 
-// Root route
-router.get('/', (req: Request, res: Response) => {
+// API route for root
+router.get('/api', (req: Request, res: Response) => {
   res.status(200).json({
     success: true,
     message: '🚀 Welcome to DYNAMIC YOUTH PROFILING SYSTEM(DYPSE) API',
@@ -17,6 +17,46 @@ router.get('/', (req: Request, res: Response) => {
     timestamp: new Date().toISOString()
   });
 });
+
+// Serve static files from the React app in production
+if (process.env.NODE_ENV === 'production') {
+  // Try multiple possible build output directories
+  const possibleBuildDirs = [
+    path.join(__dirname, '../../../client/dist'),
+    path.join(__dirname, '../../../client/build'),
+    path.join(__dirname, '../../../dist'),
+    path.join(__dirname, '../../../build')
+  ];
+
+  let clientBuildPath = '';
+  
+  // Find the first existing build directory
+  for (const dir of possibleBuildDirs) {
+    if (fs.existsSync(dir)) {
+      clientBuildPath = dir;
+      console.log(`Serving static files from: ${clientBuildPath}`);
+      break;
+    }
+  }
+  
+  if (clientBuildPath) {
+    // Serve static files from the React app
+    router.use(express.static(clientBuildPath));
+    
+    // Handle client-side routing - return index.html for all non-API routes
+    router.get('*', (req: Request, res: Response) => {
+      // Skip API routes
+      if (req.path.startsWith('/api/')) {
+        return res.status(404).json({ success: false, message: 'API endpoint not found' });
+      }
+      
+      // Serve index.html for all other routes
+      res.sendFile(path.join(clientBuildPath, 'index.html'));
+    });
+  } else {
+    console.warn('No client build directory found. Make sure to build the React app for production.');
+  }
+}
 
 // Serve profile pictures publicly, CVs with authentication
 router.get('/uploads/profile-pictures/:filename', (req, res) => {
