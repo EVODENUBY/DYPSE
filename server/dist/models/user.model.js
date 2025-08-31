@@ -83,7 +83,5 @@ const userSchema = new mongoose_1.Schema({
 }, {
     timestamps: true,
 });
-// Indexes
-userSchema.index({ email: 1 }, { unique: true });
 exports.User = mongoose_1.default.models.User || mongoose_1.default.model('User', userSchema);
 //# sourceMappingURL=user.model.js.map

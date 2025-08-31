@@ -7,15 +7,22 @@
     "rootDir": "./src",
     "strict": true,
     "esModuleInterop": true,
-    "skipLibCheck": false,
+    "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "sourceMap": true,
     "baseUrl": ".",
+    "paths": {
+      "@utils/*": ["src/utils/*"]
+    },
+    "types": ["node"],
     "typeRoots": [
       "./node_modules/@types",
+      "./src/@types",
       "./src/types"
-    ]
+    ],
+    "allowJs": true,
+    "checkJs": false
   },
   "include": ["src/**/*.ts", "src/types/**/*.d.ts"],
   "exclude": ["node_modules", "dist"]

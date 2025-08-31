@@ -3,16 +3,17 @@ export interface JobPosting {
   title: string;
   company: string;
   location: string;
-  type: string;
-  salary: {
+  jobType: string;
+  type: string; // Keeping for backward compatibility
+  salary?: {
     min: number;
     max: number;
     currency: string;
     period: string;
   };
   description: string;
-  postedDate: string;
-  deadline: string;
+  postedDate: Date | string;
+  deadline: Date | string | null;
   isRemote: boolean;
   experienceLevel: string;
   applicationCount: number;

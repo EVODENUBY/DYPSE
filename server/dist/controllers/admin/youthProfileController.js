@@ -7,25 +7,31 @@ exports.deleteYouthProfile = exports.updateVerificationStatus = exports.getAllYo
 const mongoose_1 = __importDefault(require("mongoose"));
 const user_model_1 = require("../../models/user.model");
 const youthProfile_model_1 = require("../../models/youthProfile.model");
-const errorHandler_js_1 = require("../../utils/errorHandler.js");
-const getAllYouths = async (req, res) => {
+const errorHandler_1 = require("../../utils/errorHandler");
+const getAllYouths = async (req, res, next) => {
     try {
-        // First, get all youth users
-        const users = await user_model_1.User.find({ role: user_model_1.UserRole.YOUTH })
-            .select('email role isVerified updatedAt')
-            .lean();
+        // Fetch users with proper typing
+        const users = (await user_model_1.User.find({ role: user_model_1.UserRole.YOUTH })
+            .select('_id email role isVerified updatedAt')
+            .lean()
+            .exec());
         // Get all youth profiles for these users
         const userIds = users.map(u => u._id);
         const youthProfiles = await youthProfile_model_1.YouthProfile.find({
             userId: { $in: userIds }
-        }).lean();
+        })
+            .lean()
+            .exec();
         // Create a map of userId -> profile for easy lookup
         const profileMap = new Map();
-        youthProfiles.forEach(profile => {
-            profileMap.set(profile.userId.toString(), profile);
+        youthProfiles.forEach((profile) => {
+            const userId = profile.userId?.toString();
+            if (userId) {
+                profileMap.set(userId, profile);
+            }
         });
         // Transform the data to match the frontend expectations
-        const result = users.map(user => {
+        const result = users.map((user) => {
             const profile = profileMap.get(user._id.toString());
             // Ensure isVerified is always a boolean (default to false if undefined)
             const isVerified = user.isVerified === true;
@@ -58,7 +64,7 @@ const getAllYouths = async (req, res) => {
     }
     catch (error) {
         console.error('Error fetching youth profiles:', error);
-        throw new errorHandler_js_1.AppError(error instanceof Error ? error.message : 'Failed to fetch youth profiles', 500);
+        throw new errorHandler_1.AppError(error instanceof Error ? error.message : 'Failed to fetch youth profiles', 500);
     }
 };
 exports.getAllYouths = getAllYouths;
@@ -67,7 +73,7 @@ const updateVerificationStatus = async (req, res, next) => {
         const { id } = req.params;
         const { isVerified } = req.body;
         if (typeof isVerified !== 'boolean') {
-            throw new errorHandler_js_1.AppError('Invalid verification status', 400);
+            throw new errorHandler_1.AppError('Invalid verification status', 400);
         }
         // Start a session for transaction
         const session = await mongoose_1.default.startSession();
@@ -76,7 +82,7 @@ const updateVerificationStatus = async (req, res, next) => {
             // Update user verification status
             const user = await user_model_1.User.findByIdAndUpdate(id, { $set: { isVerified } }, { new: true, runValidators: true, session }).lean().exec();
             if (!user) {
-                throw new errorHandler_js_1.AppError('User not found', 404);
+                throw new errorHandler_1.AppError('User not found', 404);
             }
             // Also update the profile's isVerified status if it exists
             if (user.profile) {
@@ -93,7 +99,7 @@ const updateVerificationStatus = async (req, res, next) => {
                 .lean()
                 .exec();
             if (!populatedUser) {
-                throw new errorHandler_js_1.AppError('Failed to fetch updated user data', 500);
+                throw new errorHandler_1.AppError('Failed to fetch updated user data', 500);
             }
             await session.commitTransaction();
             session.endSession();
@@ -111,7 +117,7 @@ const updateVerificationStatus = async (req, res, next) => {
                 updatedAt: populatedUser.updatedAt,
                 phone: profile?.phoneNumber || 'N/A',
                 email: populatedUser.email,
-                isVerified: populatedUser.isVerified,
+                isVerified: populatedUser.isVerified || false,
                 profilePicture: profile?.profilePicture
             };
             res.status(200).json({
@@ -129,30 +135,23 @@ const updateVerificationStatus = async (req, res, next) => {
         }
     }
     catch (error) {
-        if (error instanceof errorHandler_js_1.AppError) {
-            throw error;
-        }
-        console.error('Error updating verification status:', error);
-        throw new errorHandler_js_1.AppError('Failed to update verification status', 500);
-    }
-    finally {
-        next();
+        next(error instanceof errorHandler_1.AppError
+            ? error
+            : new errorHandler_1.AppError('Failed to update verification status', 500));
     }
 };
 exports.updateVerificationStatus = updateVerificationStatus;
-const deleteYouthProfile = async (req, res) => {
+const deleteYouthProfile = async (req, res, next) => {
     try {
         const { id } = req.params;
-        // Delete user and their profile in a transaction
-        const session = await user_model_1.User.startSession();
-        session.startTransaction();
+        const session = await mongoose_1.default.startSession();
         try {
+            session.startTransaction();
             // Delete user
-            await user_model_1.User.findByIdAndDelete(id).session(session);
+            await user_model_1.User.findByIdAndDelete(id).session(session).exec();
             // Delete associated youth profile
-            await youthProfile_model_1.YouthProfile.findOneAndDelete({ userId: id }).session(session);
+            await youthProfile_model_1.YouthProfile.findOneAndDelete({ userId: id }).session(session).exec();
             await session.commitTransaction();
-            session.endSession();
             res.status(204).json({
                 status: 'success',
                 data: null
@@ -160,12 +159,16 @@ const deleteYouthProfile = async (req, res) => {
         }
         catch (error) {
             await session.abortTransaction();
-            session.endSession();
             throw error;
+        }
+        finally {
+            await session.endSession();
         }
     }
     catch (error) {
-        throw new errorHandler_js_1.AppError('Failed to delete youth profile', 500);
+        next(error instanceof errorHandler_1.AppError
+            ? error
+            : new errorHandler_1.AppError('Failed to delete youth profile', 500));
     }
 };
 exports.deleteYouthProfile = deleteYouthProfile;

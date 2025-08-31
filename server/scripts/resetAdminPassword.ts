@@ -6,7 +6,7 @@ import { User } from '../src/models/User';
 dotenv.config();
 
 const ADMIN_EMAIL = 'evodemuyisingize@gmail.com';
-const ADMIN_PASSWORD = 'admin123'; // Change this to your desired password
+const ADMIN_PASSWORD = 'admin123';
 
 async function resetAdminPassword() {
   try {

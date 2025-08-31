@@ -8,6 +8,8 @@ import profileRoutes from './routes/profileRoutes';
 import activityRoutes from './routes/activity.routes';
 import staticRoutes from './routes/staticRoutes';
 import adminRoutes from './routes/admin.routes';
+import jobRoutes from './routes/job.routes';
+import { scheduleJobScraping } from './jobs/jobScraper.job';
 import { connectDB } from './utils/db';
 
 // Load environment variables
@@ -20,7 +22,7 @@ const app = express();
 // CORS configuration
 const allowedOrigins = [
   'http://localhost:3000',
-  'https://dypsesm.vercel.app', //Frontend
+  'https://dypse.vercel.app', //Frontend
   'https://dypse.onrender.com' //backend's own domain
 ];
 
@@ -60,7 +62,13 @@ app.use('/api/auth', authRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/activities', activityRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/jobs', jobRoutes);
 app.use('/', staticRoutes);
+
+// Initialize job scheduler
+if (process.env.NODE_ENV === 'production') {
+  scheduleJobScraping();
+}
 
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {

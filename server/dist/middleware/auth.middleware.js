@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.requireAdmin = exports.requireEmployer = exports.requireYouth = exports.authorize = exports.authenticateToken = void 0;
+exports.requireVerifier = exports.requireAdmin = exports.requireEmployer = exports.requireYouth = exports.authorize = exports.authenticateToken = void 0;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const User_1 = require("../models/User");
 const authenticateToken = async (req, res, next) => {
@@ -81,7 +81,7 @@ const authorize = (...roles) => {
                 message: 'Access denied. No user authenticated'
             });
         }
-        if (!roles.includes(req.user.role)) {
+        if (!req.user || !roles.some(role => role === req.user?.role)) {
             return res.status(403).json({
                 success: false,
                 message: 'Access denied. Insufficient permissions'
@@ -92,9 +92,11 @@ const authorize = (...roles) => {
 };
 exports.authorize = authorize;
 // Middleware to check if user is a youth
-exports.requireYouth = (0, exports.authorize)(User_1.UserRole.YOUTH);
+exports.requireYouth = (0, exports.authorize)('youth');
 // Middleware to check if user is an employer
-exports.requireEmployer = (0, exports.authorize)(User_1.UserRole.EMPLOYER);
+exports.requireEmployer = (0, exports.authorize)('employer');
 // Middleware to check if user is an admin
-exports.requireAdmin = (0, exports.authorize)(User_1.UserRole.ADMIN);
+exports.requireAdmin = (0, exports.authorize)('admin');
+// Middleware to check if user is a verifier
+exports.requireVerifier = (0, exports.authorize)('verifier');
 //# sourceMappingURL=auth.middleware.js.map

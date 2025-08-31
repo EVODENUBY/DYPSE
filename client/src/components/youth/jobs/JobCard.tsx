@@ -36,11 +36,14 @@ const JobCard: React.FC<JobCardProps> = ({ job, onApply }) => {
   };
 
   const formatSalary = () => {
-    const { min, currency, period } = job.salary;
-    return `${currency}${min.toLocaleString()} - ${currency}${job.salary.max.toLocaleString()} / ${period}`;
+    if (!job.salary) return 'Salary not specified';
+    const { min, max, currency = 'RWF', period = 'month' } = job.salary;
+    return `${currency}${min.toLocaleString()} - ${currency}${max.toLocaleString()} / ${period}`;
   };
 
-  const getDaysRemaining = (deadline: string) => {
+  const getDaysRemaining = (deadline: string | Date | null) => {
+    if (!deadline) return { text: 'No deadline', className: 'bg-gray-100 text-gray-800' };
+    
     const deadlineDate = new Date(deadline);
     const diffInMs = deadlineDate.getTime() - currentTime.getTime();
     const diffInDays = Math.ceil(diffInMs / (1000 * 3600 * 24));
@@ -79,9 +82,9 @@ const JobCard: React.FC<JobCardProps> = ({ job, onApply }) => {
         <div className="mt-3 mb-4 flex flex-wrap gap-2 items-center text-sm">
           <div className="flex items-center">
             <CalendarIcon className="h-4 w-4 mr-1 text-blue-500" />
-            <span className="text-blue-600 font-medium">Posted: {formatDate(job.postedDate)}</span>
+            <span className="text-blue-600 font-medium">Posted: {formatDate(String(job.postedDate))}</span>
             <span className="mx-2 text-gray-300">•</span>
-            <span className="text-blue-600 font-medium">Deadline: {formatDate(job.deadline)}</span>
+            <span className="text-blue-600 font-medium">Deadline: {job.deadline ? formatDate(String(job.deadline)) : 'No deadline'}</span>
           </div>
           <div className="flex items-center">
             <MapPinIcon className="h-4 w-4 mr-2 text-gray-400" />

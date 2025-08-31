@@ -97,7 +97,7 @@ export function HomePage() {
       <NavBar />
       
       {/* Hero Section */}
-      <section className="relative py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-[#0033FF] to-[#000333DD] text-white overflow-hidden">
+      <section className="relative py-20 px-4 sm:px-6 lg:px-8 bg-[#1b1422] text-white overflow-hidden">
         <div className="max-w-7xl mx-auto">
           <motion.div 
             className="text-center"

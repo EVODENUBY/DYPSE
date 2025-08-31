@@ -4,30 +4,20 @@ import { Footer } from '@/components/layout/Footer';
 export function AboutUsPage() {
   const teamMembers = [
     {
-      name: 'Evode',
+      name: 'Evode MUYISINGIZE',
       role: 'Software Engineer',
       image: '/team/evode.jpg'
     },
     {
-      name: 'Nancy Sabrina',
+      name: 'Nancy Sabrina ISHIMWE',
       role: 'UI/UX Designer',
       image: '/team/nancy.jpg'
     },
     {
-      name: 'Enock',
+      name: 'Enock NIYONSABA',
       role: 'CyberSecurity Expert',
       image: '/team/enock.jpg'
     },
-    {
-      name: 'JeanClaude',
-      role: 'Data scientist',
-      image: '/team/claude.jpg'
-    },
-    {
-      name: 'Forbin',
-      role: 'AI/ML Expert',
-      image: '/team/forbin.jpg'
-    }
   ];
 
   const platformFeatures = [

@@ -94,7 +94,7 @@ export const authenticateToken = async (req: Request, res: Response, next: NextF
 };
 
 // Middleware to check for specific roles
-export const authorize = (...roles: UserRole[]) => {
+export const authorize = (...roles: Array<UserRole | 'youth' | 'employer' | 'admin' | 'verifier'>) => {
   return (req: Request, res: Response, next: NextFunction) => {
     if (!req.user) {
       return res.status(401).json({ 
@@ -103,7 +103,7 @@ export const authorize = (...roles: UserRole[]) => {
       });
     }
 
-    if (!roles.includes(req.user.role)) {
+    if (!req.user || !roles.some(role => role === req.user?.role)) {
       return res.status(403).json({ 
         success: false, 
         message: 'Access denied. Insufficient permissions' 
@@ -115,10 +115,13 @@ export const authorize = (...roles: UserRole[]) => {
 };
 
 // Middleware to check if user is a youth
-export const requireYouth = authorize(UserRole.YOUTH);
+export const requireYouth = authorize('youth');
 
 // Middleware to check if user is an employer
-export const requireEmployer = authorize(UserRole.EMPLOYER);
+export const requireEmployer = authorize('employer');
 
 // Middleware to check if user is an admin
-export const requireAdmin = authorize(UserRole.ADMIN);
+export const requireAdmin = authorize('admin');
+
+// Middleware to check if user is a verifier
+export const requireVerifier = authorize('verifier');

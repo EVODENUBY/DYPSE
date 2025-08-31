@@ -169,7 +169,6 @@ const youthProfileSchema = new mongoose_1.Schema({
     timestamps: true,
 });
 // Indexes
-youthProfileSchema.index({ userId: 1 }, { unique: true });
 youthProfileSchema.index({ city: 1 });
 youthProfileSchema.index({ country: 1 });
 youthProfileSchema.index({ 'skills.name': 1 });
