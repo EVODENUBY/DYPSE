@@ -1,7 +1,7 @@
 import axios, { type AxiosInstance, type AxiosResponse, type AxiosError, type InternalAxiosRequestConfig } from 'axios';
 import type { YouthProfile } from '../pages/admin/YouthProfilesPage';
 
-// Use Vite's environment variables with fallback for production
+// environment variables
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://dypse.onrender.com/api';
 
 // Log API base URL in development

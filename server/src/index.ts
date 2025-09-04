@@ -9,6 +9,7 @@ import activityRoutes from './routes/activity.routes';
 import staticRoutes from './routes/staticRoutes';
 import adminRoutes from './routes/admin.routes';
 import jobRoutes from './routes/job.routes';
+import employerRoutes from './routes/employer.routes';
 import { scheduleJobScraping } from './jobs/jobScraper.job';
 import { connectDB } from './utils/db';
 
@@ -62,6 +63,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/activities', activityRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/employer', employerRoutes);
 app.use('/api/jobs', jobRoutes);
 app.use('/', staticRoutes);
 

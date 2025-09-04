@@ -7,6 +7,7 @@ import {
   deleteYouthProfile 
 } from '../controllers/admin/youthProfileController';
 import { getAdminDashboardStats } from '../controllers/admin/dashboardController';
+import { getAllEmployers } from '../controllers/admin/employerController';
 
 const router = express.Router();
 
@@ -21,5 +22,8 @@ router.delete('/youth-profiles/:id', deleteYouthProfile);
 
 // Dashboard stats
 router.get('/dashboard-stats', getAdminDashboardStats);
+
+// Employers
+router.get('/employers', getAllEmployers);
 
 export default router;

@@ -53,15 +53,6 @@ export const authenticateToken = async (req: Request, res: Response, next: NextF
         });
       }
 
-      // Check if user is active (allow unverified users for now)
-      // TODO: Implement proper email verification flow
-      // if (!user.isVerified) {
-      //   return res.status(401).json({ 
-      //     success: false, 
-      //     message: 'User account is not verified' 
-      //   });
-      // }
-
       // Attach user to request object
       req.user = {
         id: decoded.id,

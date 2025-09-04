@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { FiSave, FiShare2, FiUpload, FiX } from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { employerApi, type EmployerProfile } from '@/lib/employerApi';
+import { employerApi, type EmployerProfile } from '../../lib/employerApi';
 
 interface ContactDetails {
   contactPersonName: string;

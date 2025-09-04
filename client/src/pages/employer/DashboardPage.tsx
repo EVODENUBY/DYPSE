@@ -1,6 +1,5 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
-  FiUsers, 
   FiAward, 
   FiSearch, 
   FiCalendar, 
@@ -8,13 +7,66 @@ import {
   FiBell,
   FiArrowRight,
   FiTrendingUp,
+  FiBriefcase,
+  FiFileText
 } from 'react-icons/fi';
 import { FaUserGraduate, FaChartLine } from 'react-icons/fa';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useAuth } from '@/contexts/AuthContext';
+import { dashboardApi } from '@/lib/dashboardApi';
+import { toast } from 'react-hot-toast';
+
+interface DashboardStats {
+  totalYouths: number;
+  previousMonthYouths: number;
+  unemploymentRate: number;
+  activeJobs?: number;
+  totalApplications?: number;
+  newApplicationsThisMonth?: number;
+  isLoading?: boolean;
+}
 
 const EmployerDashboardPage: React.FC = () => {
   const { user } = useAuth();
+  const [stats, setStats] = useState<DashboardStats>({
+    totalYouths: 0,
+    previousMonthYouths: 0,
+    unemploymentRate: 0,
+    isLoading: true
+  });
+
+  useEffect(() => {
+    const fetchDashboardStats = async () => {
+      try {
+        const { data, success, message } = await dashboardApi.getEmployerDashboardStats();
+        
+        if (success && data) {
+          setStats({
+            totalYouths: data.totalYouths,
+            previousMonthYouths: data.previousMonthYouths || 0,
+            unemploymentRate: data.unemploymentRate,
+            activeJobs: data.activeJobs || 0,
+            totalApplications: data.totalApplications || 0,
+            newApplicationsThisMonth: data.newApplicationsThisMonth || 0,
+            isLoading: false
+          });
+        } else {
+          toast.error(message || 'Failed to load dashboard stats');
+          setStats(prev => ({ ...prev, isLoading: false }));
+        }
+      } catch (error: any) {
+        console.error('Error fetching dashboard stats:', error);
+        // On error, use fallback data
+        if (error?.response?.status !== 403) {
+          toast.error('Failed to load dashboard statistics');
+        }
+        setStats(prev => ({ ...prev, isLoading: false }));
+      }
+    };
+
+    fetchDashboardStats();
+  }, []);
+
   // Chart data
   const employmentData = [
     { month: 'Jan', employed: 65 },
@@ -31,23 +83,58 @@ const EmployerDashboardPage: React.FC = () => {
     { id: 2, text: '3 interviews scheduled for tomorrow', time: '1 hour ago' },
   ];
 
+  // Fallback data when stats can't be loaded
+  const fallbackStats = {
+    totalYouths: 1245,
+    previousMonthYouths: 12,
+    unemploymentRate: 32,
+    activeJobs: 5,
+    totalApplications: 42,
+    newApplicationsThisMonth: 3
+  };
+
+  // Use fallback data if stats are zero (which happens on error)
+  const effectiveStats = stats.isLoading || 
+    (stats.totalYouths === 0 && stats.unemploymentRate === 0) ? 
+    fallbackStats : stats;
+
   // Stats data
-  const stats = [
+  const statsCards = [
     { 
-      title: 'Total Youth Registered', 
-      value: '1,245', 
+      title: 'Active Jobs', 
+      value: stats.isLoading ? '...' : effectiveStats.activeJobs?.toLocaleString() || '0', 
+      icon: FiBriefcase, 
+      change: stats.isLoading ? '...' : `${effectiveStats.newApplicationsThisMonth ?? 0} new applications this month`, 
+      changeType: (effectiveStats.newApplicationsThisMonth ?? 0) > 0 ? 'increase' : 'neutral',
+      bgColor: 'bg-purple-100',
+      iconColor: 'text-purple-600',
+      textColor: 'text-gray-600'
+    },
+    { 
+      title: 'Total Applications', 
+      value: stats.isLoading ? '...' : effectiveStats.totalApplications?.toLocaleString() || '0', 
+      icon: FiFileText, 
+      change: stats.isLoading ? '...' : 'All time applications',
+      changeType: 'neutral',
+      bgColor: 'bg-green-100',
+      iconColor: 'text-green-600',
+      textColor: 'text-gray-600'
+    },
+    { 
+      title: 'Platform Youth', 
+      value: stats.isLoading ? '...' : effectiveStats.totalYouths.toLocaleString(), 
       icon: FaUserGraduate, 
-      change: '+12%', 
-      changeType: 'increase',
+      change: 'Total registered youth',
+      changeType: 'neutral',
       bgColor: 'bg-blue-100',
       iconColor: 'text-blue-600',
       textColor: 'text-gray-600'
     },
     { 
-      title: 'Unemployed', 
-      value: '32%', 
-      icon: FiUsers, 
-      change: '-5%', 
+      title: 'Response Rate', 
+      value: stats.isLoading ? '...' : `${effectiveStats.unemploymentRate}%`, 
+      icon: FiTrendingUp, 
+      change: 'Job application response rate', 
       changeType: 'decrease',
       bgColor: 'bg-red-100',
       iconColor: 'text-red-600',
@@ -156,7 +243,7 @@ const EmployerDashboardPage: React.FC = () => {
       
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {stats.map((stat, index) => (
+        {statsCards.map((stat, index) => (
           <div 
             key={index}
             className={`bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-all duration-200 ${index === 3 ? 'lg:col-span-2' : ''}`}

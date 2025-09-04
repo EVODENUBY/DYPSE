@@ -31,7 +31,6 @@ import {
   FiBriefcase,
   FiLogOut,
   FiActivity,
-  FiFileText,
   FiCheckCircle,
   FiHome,
   FiBell
@@ -107,11 +106,6 @@ const EmployerSidebar: React.FC<EmployerSidebarProps> = ({ isCollapsed, onToggle
       name: 'Employer Profiles', 
       icon: <FiUser className="h-5 w-5" />, 
       path: '/employer/profile' 
-    },
-    { 
-      name: 'Record Business Type', 
-      icon: <FiFileText className="h-5 w-5" />, 
-      path: '/employer/record-business' 
     },
     { 
       name: 'Analytics', 
