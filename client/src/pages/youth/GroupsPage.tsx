@@ -1,110 +1,77 @@
-import { useState } from 'react';
-import { FiSearch, FiFilter, FiUsers, FiLock } from 'react-icons/fi';
+import { useState, useEffect } from 'react';
+import { FiSearch, FiUsers, FiCheck } from 'react-icons/fi';
+import { ArrowLeftIcon } from '@heroicons/react/24/outline';
+import { Link } from 'react-router-dom';
 
 interface Group {
   id: string;
   name: string;
-  memberCount: number;
-  isPrivate: boolean;
   description: string;
-  category: string;
-  image: string;
+  logo: string;
+  tips?: string[];
+  rules?: string;
+  createdAt: string;
+  participants: string[];
 }
+
+const GROUPS_STORAGE_KEY = 'admin_groups';
+const YOUTH_JOINED_GROUPS_KEY = 'youth_joined_groups';
 
 const GroupsPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('All');
-  
-  const categories = ['All', 'Technology', 'Business', 'Design', 'Marketing', 'Other'];
-  
-  // Mock data for groups
-  // Using placeholder images from a reliable source
-  const getPlaceholderImage = (category: string, id: number) => {
-    const baseUrl = 'https://source.unsplash.com/random/400x200/?';
-    const categories: Record<string, string> = {
-      'Technology': 'web,development,programming',
-      'Marketing': 'marketing,social,media',
-      'Design': 'design,ui,ux,graphic',
-      'Business': 'business,meeting,office',
-      'Other': 'network,community,group'
-    };
-    const searchTerm = categories[category] || 'group';
-    return `${baseUrl}${searchTerm}&sig=${id}`; // Add unique ID to prevent caching
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [joinedGroups, setJoinedGroups] = useState<string[]>([]);
+  const [modalGroup, setModalGroup] = useState<Group | null>(null);
+  const [acceptRules, setAcceptRules] = useState(false);
+
+  useEffect(() => {
+    const stored = localStorage.getItem(GROUPS_STORAGE_KEY);
+    if (stored) {
+      setGroups(JSON.parse(stored));
+    }
+    const joined = localStorage.getItem(YOUTH_JOINED_GROUPS_KEY);
+    if (joined) {
+      setJoinedGroups(JSON.parse(joined));
+    }
+  }, []);
+
+  const handleJoin = (group: Group) => {
+    setModalGroup(group);
+    setAcceptRules(false);
+  };
+  const confirmJoin = () => {
+    if (modalGroup && !joinedGroups.includes(modalGroup.id)) {
+      const updated = [...joinedGroups, modalGroup.id];
+      setJoinedGroups(updated);
+      localStorage.setItem(YOUTH_JOINED_GROUPS_KEY, JSON.stringify(updated));
+      // Update participants in group
+      const updatedGroups = groups.map(g =>
+        g.id === modalGroup.id ? { ...g, participants: [...(g.participants || []), 'youth'] } : g
+      );
+      setGroups(updatedGroups);
+      localStorage.setItem(GROUPS_STORAGE_KEY, JSON.stringify(updatedGroups));
+      setModalGroup(null);
+    }
   };
 
-  const groups: Group[] = [
-    {
-      id: '1',
-      name: 'Web Developers Community',
-      memberCount: 1243,
-      isPrivate: false,
-      description: 'A community for web developers to share knowledge and collaborate on projects.',
-      category: 'Technology',
-      image: getPlaceholderImage('Technology', 1)
-    },
-    {
-      id: '2',
-      name: 'Digital Marketing Pros',
-      memberCount: 856,
-      isPrivate: false,
-      description: 'For marketing professionals to discuss trends and strategies in digital marketing.',
-      category: 'Marketing',
-      image: getPlaceholderImage('Marketing', 2)
-    },
-    {
-      id: '3',
-      name: 'UX/UI Designers Hub',
-      memberCount: 621,
-      isPrivate: true,
-      description: 'Exclusive group for UX/UI designers to share work and get feedback.',
-      category: 'Design',
-      image: getPlaceholderImage('Design', 3)
-    },
-    {
-      id: '4',
-      name: 'Startup Founders',
-      memberCount: 432,
-      isPrivate: true,
-      description: 'Networking and knowledge sharing for startup founders and entrepreneurs.',
-      category: 'Business',
-      image: getPlaceholderImage('Business', 4)
-    },
-    {
-      id: '5',
-      name: 'Data Science Enthusiasts',
-      memberCount: 1102,
-      isPrivate: false,
-      description: 'For data scientists and analysts to discuss tools, techniques, and career growth.',
-      category: 'Technology',
-      image: getPlaceholderImage('Technology', 5)
-    },
-    {
-      id: '6',
-      name: 'Freelance Network',
-      memberCount: 723,
-      isPrivate: false,
-      description: 'Connect with other freelancers and find collaboration opportunities.',
-      category: 'Business',
-      image: getPlaceholderImage('Business', 6)
-    },
-  ];
-
-  const filteredGroups = groups.filter(group => {
-    const matchesSearch = group.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                         group.description.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategory === 'All' || group.category === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
+  const filteredGroups = groups.filter(group =>
+    group.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    group.description.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-800 mb-2">Groups</h1>
-        <p className="text-gray-600">Join groups to connect with like-minded professionals and grow your network</p>
+        <div className="flex items-center mb-2">
+          <Link to="/youth/dashboard" className="mr-4 text-gray-500 hover:text-gray-700">
+            <ArrowLeftIcon className="h-5 w-5" />
+          </Link>
+          <h1 className="text-3xl font-bold text-gray-900">Groups</h1>
+        </div>
+        <p className="text-gray-600">Find and join groups created by the admin. Grow your network and collaborate!</p>
       </div>
-
-      {/* Search and Filter */}
+      {/* Search */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-8">
         <div className="flex flex-col md:flex-row gap-4">
           <div className="relative flex-1">
@@ -119,52 +86,24 @@ const GroupsPage = () => {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <FiFilter className="h-5 w-5 text-gray-400" />
-            </div>
-            <select
-              className="block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white"
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-            >
-              {categories.map(category => (
-                <option key={category} value={category}>
-                  {category === 'All' ? 'All Categories' : category}
-                </option>
-              ))}
-            </select>
-          </div>
         </div>
       </div>
-
       {/* Groups Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredGroups.map((group) => (
           <div key={group.id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow duration-200">
-            <div className="h-40 bg-gray-100 relative">
-              <img 
-                src={group.image} 
-                alt={group.name}
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  // Fallback to gradient background if image fails to load
-                  const target = e.target as HTMLImageElement;
-                  target.onerror = null;
-                  target.src = '';
-                  target.parentElement!.innerHTML = `
-                    <div class="w-full h-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
-                      <span class="text-white text-2xl font-bold">
-                        ${group.name.charAt(0).toUpperCase()}
-                      </span>
-                    </div>
-                  `;
-                }}
-              />
-              {group.isPrivate && (
-                <div className="absolute top-2 right-2 bg-black bg-opacity-60 text-white text-xs px-2 py-1 rounded-full flex items-center">
-                  <FiLock className="mr-1 h-3 w-3" />
-                  Private
+            <div className="h-40 bg-gray-100 relative flex items-center justify-center">
+              {group.logo ? (
+                <img 
+                  src={group.logo} 
+                  alt={group.name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
+                  <span className="text-white text-2xl font-bold">
+                    {group.name.charAt(0).toUpperCase()}
+                  </span>
                 </div>
               )}
             </div>
@@ -172,30 +111,107 @@ const GroupsPage = () => {
               <div className="flex justify-between items-start mb-2">
                 <h3 className="text-lg font-semibold text-gray-800">{group.name}</h3>
                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                  {group.category}
+                  Created
                 </span>
               </div>
-              <p className="text-gray-600 text-sm mb-4 line-clamp-2">{group.description}</p>
+              <p className="text-gray-600 text-sm mb-2 line-clamp-2">{group.description}</p>
+              {group.tips && group.tips.length > 0 && (
+                <div className="text-xs text-blue-500 mb-2">
+                  <h4 className="text-xs font-semibold text-gray-700 mb-1">Core Activities/Skills:</h4>
+                  <ul className="list-disc list-inside text-xs text-gray-600">
+                    {group.tips.map((tip, idx) => (
+                      <li key={idx}>{tip}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {/* Removed rules and regulations display from group card */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center text-sm text-gray-500">
-                  <FiUsers className="mr-1 h-4 w-4" />
-                  {group.memberCount.toLocaleString()} members
+                  <FiUsers className="mr-1 h-4 w-4 text-blue-600" />
+                  <span className="inline-block bg-blue-100 text-blue-700 text-xs font-semibold px-2 py-0.5 rounded-full mr-2">
+                    {group.participants.length}
+                  </span>
+                  Participants
                 </div>
-                <button
-                  className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                >
-                  Join Group
-                </button>
+                {joinedGroups.includes(group.id) ? (
+                  <button
+                    className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-green-600 cursor-default"
+                    disabled
+                  >
+                    <FiCheck className="mr-1" /> Joined
+                  </button>
+                ) : (
+                  <button
+                    className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    onClick={() => handleJoin(group)}
+                  >
+                    Join Group
+                  </button>
+                )}
               </div>
             </div>
           </div>
         ))}
       </div>
-
       {filteredGroups.length === 0 && (
         <div className="text-center py-12">
           <h3 className="text-lg font-medium text-gray-900 mb-1">No groups found</h3>
-          <p className="text-gray-500">Try adjusting your search or filter to find what you're looking for.</p>
+          <p className="text-gray-500">Try adjusting your search to find what you're looking for.</p>
+        </div>
+      )}
+      {modalGroup && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40"
+          onClick={e => {
+            if (e.target === e.currentTarget) setModalGroup(null);
+          }}
+        >
+          <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6 relative">
+            <button className="absolute top-2 right-2 text-gray-400 hover:text-gray-600" onClick={() => setModalGroup(null)}>&times;</button>
+            <div className="flex items-center mb-4">
+              {modalGroup.logo && <img src={modalGroup.logo} alt={modalGroup.name} className="h-12 w-12 rounded-full object-cover mr-3" />}
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">{modalGroup.name}</h2>
+                <p className="text-gray-600 text-sm">{modalGroup.description}</p>
+              </div>
+            </div>
+            {modalGroup.tips && modalGroup.tips.length > 0 && (
+              <div className="mb-2">
+                <h4 className="text-xs font-semibold text-gray-700 mb-1">Core Activities/Skills:</h4>
+                <ul className="list-disc list-inside text-xs text-gray-600">
+                  {modalGroup.tips.map((tip, idx) => (
+                    <li key={idx}>{tip}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {modalGroup.rules && (
+              <div className="mb-2">
+                <h4 className="text-xs font-semibold text-purple-700 mb-1">Rules & Regulations:</h4>
+                <div className="text-xs text-gray-700 whitespace-pre-line border p-2 rounded bg-purple-50">{modalGroup.rules}</div>
+              </div>
+            )}
+            <div className="flex items-center mt-4 mb-2">
+              <input
+                type="checkbox"
+                id="acceptRules"
+                checked={acceptRules}
+                onChange={e => setAcceptRules(e.target.checked)}
+                className="mr-2"
+              />
+              <label htmlFor="acceptRules" className="text-xs text-gray-700">I accept the rules and regulations of this group</label>
+            </div>
+            <button
+              className={`w-full py-2 px-4 rounded-md flex items-center justify-center ${
+                acceptRules ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-300 cursor-not-allowed'
+              } text-white font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
+              disabled={!acceptRules}
+              onClick={confirmJoin}
+            >
+              Join Group
+            </button>
+          </div>
         </div>
       )}
     </div>

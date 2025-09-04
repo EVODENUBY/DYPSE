@@ -122,19 +122,19 @@ export function AboutUsPage() {
                 <h2 className="text-2xl font-bold text-gray-900 mb-6">Meet Our Team</h2>
                 <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
                   {teamMembers.map((member, index) => {
-                    // Get first letter of first name and first letter of last name if exists
-                    const [firstName, ...lastName] = member.name.split(' ');
-                    const initials = (firstName[0] + (lastName.length > 0 ? lastName[0][0] : '')).toUpperCase();
+                    // // Get first letter of first name and first letter of last name if exists
+                    // const [firstName, ...lastName] = member.name.split(' ');
+                    // const initials = (firstName[0] + (lastName.length > 0 ? lastName[0][0] : '')).toUpperCase();
                     
                     return (
                       <div key={index} className="text-center"> 
                         <div className="w-16 h-16 mx-auto mb-2 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 overflow-hidden flex items-center justify-center">
                           <span className="text-xl font-bold text-white">
-                            {initials}
+                            <img src={member.image} alt="profile" />
                           </span>
                         </div>
                         <h4 className="text-sm font-medium text-gray-900">{member.name}</h4>
-                        <p className="text-xs text-gray-500">{member.role}</p>
+                        <p className="text-xs text-blue-500">{member.role}</p>
                       </div>
                     );
                   })}

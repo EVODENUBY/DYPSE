@@ -30,6 +30,7 @@ import SearchAndMatchPage from './pages/admin/SearchAndMatchPage';
 import LocationMapPage from './pages/admin/LocationMapPage';
 import EmployerLocationMapPage from './pages/employer/LocationMapPage';
 import EmployersPage from './pages/admin/EmployersPage';
+import AdminGroupsPage from './pages/admin/GroupsPage';
 import YouthLayout from './components/youth/YouthLayout';
 import EmployerLayout from './components/employer/EmployerLayout';
 import AdminLayout from './components/admin/AdminLayout';
@@ -125,6 +126,7 @@ function App() {
             <Route path="dashboard" element={<AdminDashboard />} />
             <Route path="youth-profiles" element={<YouthProfilesPage/>} />
             <Route path="employers" element={<EmployersPage/>} />
+            <Route path="groups" element={<AdminGroupsPage/>} />
             <Route path="analytics" element={<AdminAnalyticsPage/>}/>
             <Route path="location-map" element={<LocationMapPage/>}/>
             {/* Add other admin routes here */}
