@@ -6,6 +6,7 @@ import {
   updateVerificationStatus, 
   deleteYouthProfile 
 } from '../controllers/admin/youthProfileController';
+import { getAdminDashboardStats } from '../controllers/admin/dashboardController';
 
 const router = express.Router();
 
@@ -17,5 +18,8 @@ router.use(authorize(UserRole.ADMIN));
 router.get('/youth-profiles', getAllYouths);
 router.patch('/youth-profiles/:id/verify', updateVerificationStatus);
 router.delete('/youth-profiles/:id', deleteYouthProfile);
+
+// Dashboard stats
+router.get('/dashboard-stats', getAdminDashboardStats);
 
 export default router;
