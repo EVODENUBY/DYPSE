@@ -46,7 +46,7 @@ export function NavBar() {
 
           {/* CTA Button */}
           <div className="hidden md:block">
-            <Button className="bg-gradient-to-r from-[#0033FF] to-[#000333DD] hover:bg-blue-700 text-white" asChild>
+            <Button className="bg-[#2651C1] hover:bg-blue-700 text-white" asChild>
               <Link to="/login">Get Started</Link>
             </Button>
           </div>

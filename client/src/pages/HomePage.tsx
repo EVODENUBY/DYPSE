@@ -97,7 +97,7 @@ export function HomePage() {
       <NavBar />
       
       {/* Hero Section */}
-      <section className="relative py-20 px-4 sm:px-6 lg:px-8 bg-[#1b1422] text-white overflow-hidden">
+      <section className="relative py-20 px-4 sm:px-6 lg:px-8 bg-[#2651C1] text-white overflow-hidden">
         <div className="max-w-7xl mx-auto">
           <motion.div 
             className="text-center"
@@ -162,7 +162,7 @@ export function HomePage() {
       </section>
       
       {/* Who It Serves Section */}
-      <section className="py-20 bg-white">
+      <section className="py-20 bg-white/90">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div 
             className="text-center mb-16"
@@ -315,7 +315,7 @@ export function HomePage() {
       </section>
 
       {/* Data Visuals Preview Section */}
-      <section className="py-20 bg-white">
+      <section className="py-20 bg-white/80">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div 
             className="text-center mb-16"
@@ -379,92 +379,94 @@ export function HomePage() {
         </div>
       </section>
       
-      {/* How It Works Section */}
-      <section className="py-20 bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div 
-            className="text-center mb-16"
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            viewport={{ once: true }}
+     {/* How It Works Section */}
+<section className="py-20 bg-[#2651C1] text-black">
+  <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+    <motion.div 
+      className="text-center mb-16"
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6 }}
+      viewport={{ once: true }}
+    >
+      <h2 className="text-4xl font-bold mb-4">
+        {/* if you want this gradient title to stay, keep text-transparent */}
+        <span className="text-white bg-clip-text ">
+          How It Works
+        </span>
+      </h2>
+      <p className="text-xl text-white">Simple steps to start your journey with DYPSE</p>
+    </motion.div>
+    
+    <motion.div 
+      className="relative"
+      variants={containerVariants}
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true }}
+    >
+      {/* Timeline Line */}
+      <div className="absolute left-1/2 transform -translate-x-1/2 h-full w-1 bg-gradient-to-b from-blue-500 via-purple-500 to-pink-500 hidden md:block"></div>
+      
+      <div className="space-y-12">
+        {[
+          {
+            title: "Create Profile",
+            description: "Sign up and build your comprehensive profile with skills, experience, and goals.",
+            icon: <FaUser className="h-6 w-6" />,
+            gradient: "from-blue-500 to-blue-600",
+            step: "1"
+          },
+          {
+            title: "Upload & Analyze",
+            description: "Upload your CV and let our AI analyze your skills and experience.",
+            icon: <FaChartLine className="h-6 w-6" />,
+            gradient: "from-purple-500 to-purple-600",
+            step: "2"
+          },
+          {
+            title: "Get Matched",
+            description: "Receive personalized job recommendations and opportunities based on your profile.",
+            icon: <FaHandshake className="h-6 w-6" />,
+            gradient: "from-pink-500 to-pink-600",
+            step: "3"
+          }
+        ].map((step, index) => (
+          <motion.div
+            key={index} 
+            variants={itemVariants}
+            className={`flex items-center ${index % 2 === 0 ? 'md:flex-row' : 'md:flex-row-reverse'}`}
           >
-            <h2 className="text-4xl font-bold mb-4">
-              <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
-                How It Works
-              </span>
-            </h2>
-            <p className="text-xl text-gray-600">Simple steps to start your journey with DYPSE</p>
-          </motion.div>
-          
-          <motion.div 
-            className="relative"
-            variants={containerVariants}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-          >
-            {/* Timeline Line */}
-            <div className="absolute left-1/2 transform -translate-x-1/2 h-full w-1 bg-gradient-to-b from-blue-500 via-purple-500 to-pink-500 hidden md:block"></div>
-            
-            <div className="space-y-12">
-              {[
-                {
-                  title: "Create Profile",
-                  description: "Sign up and build your comprehensive profile with skills, experience, and goals.",
-                  icon: <FaUser className="h-6 w-6" />,
-                gradient: "from-blue-500 to-blue-600",
-                  step: "1"
-                },
-                {
-                  title: "Upload & Analyze",
-                  description: "Upload your CV and let our AI analyze your skills and experience.",
-                  icon: <FaChartLine className="h-6 w-6" />,
-                gradient: "from-purple-500 to-purple-600",
-                  step: "2"
-              },
-              {
-                title: "Get Matched",
-                  description: "Receive personalized job recommendations and opportunities based on your profile.",
-                  icon: <FaHandshake className="h-6 w-6" />,
-                gradient: "from-pink-500 to-pink-600",
-                  step: "3"
-              }
-            ].map((step, index) => (
-                <motion.div
-                key={index} 
-                  variants={itemVariants}
-                  className={`flex items-center ${index % 2 === 0 ? 'md:flex-row' : 'md:flex-row-reverse'}`}
-                >
-                  <div className="flex-1 md:text-right md:pr-8">
-                    <div className={`inline-flex items-center justify-center h-12 w-12 rounded-full bg-gradient-to-br ${step.gradient} text-white font-bold text-lg mb-4 md:mb-0`}>
-                      {step.step}
-                    </div>
-                    <h3 className="text-2xl font-bold text-gray-900 mb-2">{step.title}</h3>
-                    <p className="text-gray-600">{step.description}</p>
-                  </div>
-                  
-                  <div className=" md:block flex-shrink-0 w-16 h-16 rounded-full bg-white border-4 border-gray-200 flex items-center justify-center shadow-lg">
-                    <div className={`h-8 w-8 rounded-lg bg-gradient-to-br ${step.gradient} flex items-center justify-center text-white`}>
-                  {step.icon}
-                </div>
-                  </div>
-                  
-                  <div className="flex-1 md:text-left md:pl-8">
-                    <div className="md:hidden">
-                      <h3 className="text-2xl font-bold text-gray-900 mb-2">{step.title}</h3>
-                      <p className="text-gray-600">{step.description}</p>
-                    </div>
+            <div className="flex-1 md:text-right md:pr-8">
+              <div className={`inline-flex items-center justify-center h-12 w-12 rounded-full bg-gradient-to-br ${step.gradient} text-white font-bold text-lg mb-4 md:mb-0`}>
+                {step.step}
               </div>
-                </motion.div>
-            ))}
-          </div>
+              <h3 className="text-2xl font-bold mb-2">{step.title}</h3>
+              <p>{step.description}</p>
+            </div>
+            
+            <div className="md:block flex-shrink-0 w-16 h-16 rounded-full bg-white border-4 border-gray-200 flex items-center justify-center shadow-lg">
+              <div className={`h-8 w-8 rounded-lg bg-gradient-to-br ${step.gradient} flex items-center justify-center text-white`}>
+                {step.icon}
+              </div>
+            </div>
+            
+            <div className="flex-1 md:text-left md:pl-8">
+              <div className="md:hidden">
+                <h3 className="text-2xl font-bold mb-2">{step.title}</h3>
+                <p>{step.description}</p>
+              </div>
+            </div>
           </motion.div>
-        </div>
-      </section>
+        ))}
+      </div>
+    </motion.div>
+  </div>
+</section>
+
 
       {/* Entrepreneurship Section with Animated Stats */}
-      <section className="py-20 bg-gradient-to-r from-green-50 to-emerald-50">
+      <section className="py-20 bg-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div 
             className="text-center mb-16"
@@ -558,47 +560,55 @@ export function HomePage() {
             </p>
           </motion.div>
 
-          <motion.div 
-            className="grid grid-cols-1 md:grid-cols-3 gap-8"
-            variants={containerVariants}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-          >
-            {[
-              {
-                name: "DTP Rwanda",
-                description: "Digital Talent Program Rwanda",
-                logo: "DTP Logo",
-                gradient: "from-blue-500 to-blue-600"
-              },
-              {
-                name: "ICT Chamber Rwanda",
-                description: "Information and Communication Technology Chamber",
-                logo: "ICT Logo",
-                gradient: "from-green-500 to-green-600"
-              },
-              {
-                name: "Ministry of ICT & Innovation",
-                description: "Government Ministry for ICT and Innovation",
-                logo: "Ministry Logo",
-                gradient: "from-purple-500 to-purple-600"
-              }
-            ].map((partner, index) => (
-              <motion.div
-                key={index}
-                variants={itemVariants}
-                whileHover={{ scale: 1.05 }}
-                className="text-center p-8 rounded-2xl bg-gray-50 hover:bg-gray-100 transition-all duration-300"
-              >
-                <div className={`h-20 w-20 rounded-2xl bg-gradient-to-br ${partner.gradient} flex items-center justify-center text-white mx-auto mb-6 text-lg font-bold`}>
-                  {partner.logo}
-                </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">{partner.name}</h3>
-                <p className="text-gray-600">{partner.description}</p>
-              </motion.div>
-            ))}
-          </motion.div>
+        <motion.div 
+  className="grid grid-cols-1 md:grid-cols-3 gap-8"
+  variants={containerVariants}
+  initial="hidden"
+  whileInView="visible"
+  viewport={{ once: true }}
+>
+  {[
+    {
+      name: "DTP Rwanda",
+      description: "Digital Talent Program Rwanda",
+      logo: "images/DTP.jpg",   
+      gradient: "from-blue-500 to-blue-600"
+    },
+    {
+      name: "ICT Chamber Rwanda",
+      description: "Information and Communication Technology Chamber",
+      logo: "images/ICT.jpeg",
+      gradient: "from-green-500 to-green-600"
+    },
+    {
+      name: "Ministry of ICT & Innovation",
+      description: "Government Ministry for ICT and Innovation",
+      logo: "images/Ministry.jpeg",
+      gradient: "from-purple-500 to-purple-600"
+    }
+  ].map((partner, index) => (
+    <motion.div
+      key={index}
+      variants={itemVariants}
+      whileHover={{ scale: 1.05 }}
+      className="text-center p-8 rounded-2xl bg-gray-50 hover:bg-gray-100 transition-all duration-300"
+    >
+      {/* Logo Image (inside styled box) */}
+      <div className={`h-20 w-20 rounded-2xl  ${partner.gradient} flex items-center justify-center mx-auto mb-6`}>
+        <img 
+          src={partner.logo} 
+          alt={partner.name} 
+          className="h-20 w-20 object-contain"
+        />
+      </div>
+
+      {/* Name + Description */}
+      <h3 className="text-xl font-bold text-gray-900 mb-2">{partner.name}</h3>
+      <p className="text-gray-600">{partner.description}</p>
+    </motion.div>
+  ))}
+</motion.div>
+
         </div>
       </section>
 
@@ -659,7 +669,7 @@ export function HomePage() {
       </section>
       
       {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-r from-[#0033FF] to-[#000333DD] text-white">
+      <section className="py-20 bg-[#2651C1]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}

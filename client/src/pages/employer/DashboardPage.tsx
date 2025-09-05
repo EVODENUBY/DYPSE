@@ -85,11 +85,11 @@ const EmployerDashboardPage: React.FC = () => {
 
   // Fallback data when stats can't be loaded
   const fallbackStats = {
-    totalYouths: 1245,
-    previousMonthYouths: 12,
+    totalYouths: 50,
+    previousMonthYouths: 17,
     unemploymentRate: 32,
     activeJobs: 5,
-    totalApplications: 42,
+    totalApplications: 37,
     newApplicationsThisMonth: 3
   };
 
